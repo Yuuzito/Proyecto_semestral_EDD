@@ -2,6 +2,49 @@
 #include "grafoADT.h"
 #include "lecturaDataSet.cpp"
 
+#include "extern/csv.h"
+
+template <typename V, typename E>
+void loadDatasetIMDb(const std::string& fileName, Grafo<V, E>& grafo) {
+    try {
+        // Configuramos el parser indicando que hay 3 columnas
+        io::CSVReader<3> in(fileName);
+        
+        // Leemos la cabecera exacta de tu archivo
+        in.read_header(io::ignore_extra_column, "From", "To", "Strength");
+
+        std::string from;
+        std::string to;
+        double strength; // El parser manejará la conversión de "1" a double
+
+        // Diccionario auxiliar: Mapea el Nombre (string) -> ID interno del Grafo (int)
+        // Esto evita tener que buscar linealmente en el grafo entero por cada iteración.
+        // NOTA: esto deberia ser implementado en el ADT en caso de implementar el uso de la libreria
+        std::unordered_map<std::string, int> nameToId;
+
+        cout << "Cargando dataset desde: " << fileName << "..." << endl;
+
+        // Leemos fila por fila
+        while (in.read_row(from, to, strength)) {
+            // Evaluamos e inicializamos id_v1
+            int id_v1 = nameToId.count(from) ? nameToId[from] : (nameToId[from] = grafo.insertVertex(from));
+            // Evaluamos e inicializamos id_v2
+            int id_v2 = nameToId.count(to) ? nameToId[to] : (nameToId[to] = grafo.insertVertex(to));
+            E peso_arista = static_cast<E>(strength);
+
+            // Insertamos la arista en el grafo
+            grafo.insertEdge(id_v1, id_v2, peso_arista);
+        }
+
+        cout << "Carga completada exitosamente." << endl;
+    }
+    catch(const std::exception& e) {
+        cerr << "Error al leer el archivo CSV: " << e.what() << endl;
+    }
+    
+}
+
+
 int main() {
     Grafo<std::string, int> red_actores(false); // false = no dirigido.
     
