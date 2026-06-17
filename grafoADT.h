@@ -20,6 +20,9 @@ private:
     // Mapea el ID de la arista -> Datos de la arista (u, v, elemento)
     std::unordered_map<int, AristaData> mapa_aristas;
 
+    // Mapeo inverso de mapa_vertices (Permite buscar en O(1) si un vértice existe)
+    std::unordered_map<VType, int> mapa_id_vertices;
+
     // LISTA DE ADYACENCIA: u -> (v -> id_arista)
     // Permite buscar vecinos y aristas en O(1) promedio
     std::unordered_map<int, std::unordered_map<int, int>> lista_adyacencia;
@@ -36,7 +39,9 @@ public:
         es_dirigido = dirigido;
     }
 
+    // ==========================================
     // MÉTODOS DE ACCESO
+    // ==========================================
 
     // Un arreglo (o par) con los dos puntos extremos de e
     std::pair<int, int> endVertices(int e) {
@@ -75,12 +80,21 @@ public:
         mapa_aristas[e].elemento = x;
     }
 
+    // ==========================================
     // MÉTODOS DE ACTUALIZACIÓN
+    // ==========================================
 
     // Inserta un vértice almacenando el elemento o. Retorna su ID (posición)
     int insertVertex(VType o) {
+        // CASO 1: Si el vértice existe, simplemente retornamos su id
+        if (mapa_id_vertices.find(o) != mapa_id_vertices.end()) {
+            return mapa_id_vertices[o];
+        }
+
+        // CASO 2: Si no existe, lo creamos e insertamos
         int id = id_vertice_actual++;
         mapa_vertices[id] = o;
+        mapa_id_vertices[o] = id;
         lista_adyacencia[id] = {}; // Inicializa su lista de adyacencia vacía
         return id;
     }
@@ -131,7 +145,9 @@ public:
         mapa_aristas.erase(e);
     }
 
+    // ==========================================
     // MÉTODOS ITERADORES
+    // ==========================================
 
     // Aristas incidentes a un vértice v
     std::vector<int> incidentEdges(int v) {
@@ -162,9 +178,11 @@ public:
         return aristas_totales;
     }
 
+    // ==========================================
     // MÉTODOS PARA OBTENER DATOS
-    
-    VType getVertexElement(int v) { 
+    // ==========================================
+
+    VType getVertexElement(int v) {
         return mapa_vertices.at(v); 
     }
 
