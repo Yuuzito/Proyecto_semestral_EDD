@@ -4,6 +4,9 @@
 #include "lecturaDataSet.cpp"
 #include "datasetLoader.h"
 
+#include <chrono>
+#include "extern/csv.h"
+
 int main() {
     // Instanciamos grafos
     Grafo<std::string, int> redActores(false);  // false = no dirigido
