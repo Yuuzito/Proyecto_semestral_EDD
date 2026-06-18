@@ -12,7 +12,6 @@ private:
         int u; // Vértice origen
         int v; // Vértice destino
         EType elemento; // Peso, etiqueta, etc.
-        EType peso_minimo;
     };
 
     // Mapea el ID del vértice -> Elemento del vértice
@@ -33,12 +32,6 @@ private:
     int id_arista_actual = 0;
     
     bool es_dirigido;
-
-    // ==========================================
-    // MÉTODOS AUXILIARES
-    // ==========================================
-
-
 
 public:
     // Constructor
@@ -113,8 +106,7 @@ public:
         }
         
         int id = id_arista_actual++;
-        // Una arista se inicializa con elemento = peso_minimo = "o"
-        mapa_aristas[id] = { v, w, o, o };
+        mapa_aristas[id] = {v, w, o};
         
         lista_adyacencia[v][w] = id;
         if (!es_dirigido) {
@@ -200,15 +192,6 @@ public:
 
     int numVertices() { 
         return mapa_vertices.size(); 
-    }
-
-    EType getEdgeMinimum(int e) { 
-        return mapa_aristas.at(e).peso_minimo; 
-    }
-
-    void replaceEdgeMinimum(int e, EType x) {
-        if (mapa_aristas.find(e) == mapa_aristas.end()) throw std::invalid_argument("Arista no existe");
-        mapa_aristas[e].peso_minimo = x;
     }
 
 };

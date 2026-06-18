@@ -6,28 +6,6 @@
 
 namespace DatasetLoader {
 
-    // Función auxiliar actualizada para manejar la dualidad de métricas
-    template <typename V, typename E>
-    void insertarOSumarArista(Grafo<V, E>& grafo, int id_v1, int id_v2, E peso_nuevo) {
-        int id_arista = grafo.getEdge(id_v1, id_v2);
-        
-        if (id_arista != -1) {
-            // 1. Lógica para Degree / PageRank: Acumular el peso total
-            E peso_actual = grafo.getEdgeElement(id_arista);
-            grafo.replaceEdge(id_arista, peso_actual + peso_nuevo);
-            
-            // 2. Lógica para Closeness / Betweenness: Mantener el valor más bajo
-            E min_actual = grafo.getEdgeMinimum(id_arista);
-            if (peso_nuevo < min_actual) {
-                grafo.replaceEdgeMinimum(id_arista, peso_nuevo);
-            }
-        } else {
-            // Si la arista no existe, insertEdge se encarga de inicializar 
-            // tanto la suma como el mínimo con 'peso_nuevo'
-            grafo.insertEdge(id_v1, id_v2, peso_nuevo);
-        }
-    }
-
     template <typename V, typename E>
     void cargarDatasetCSV(
         const std::string& nombreArchivo,
@@ -61,7 +39,7 @@ namespace DatasetLoader {
                 
                 E peso_arista = static_cast<E>(peso);
 
-                insertarOSumarArista(grafo, id_v1, id_v2, peso_arista);
+                grafo.insertEdge(id_v1, id_v2, peso_arista);
             }
         }
         catch (const std::exception& e) {
