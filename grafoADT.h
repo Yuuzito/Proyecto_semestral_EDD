@@ -8,7 +8,7 @@
 template <typename VType, typename EType>
 class Grafo {
 private:
-    struct AristaData {
+    struct AristaInterna {
         int u; // Vértice origen
         int v; // Vértice destino
         EType elemento; // Peso, etiqueta, etc.
@@ -17,8 +17,8 @@ private:
     // Mapea el ID del vértice -> Elemento del vértice
     std::unordered_map<int, VType> mapa_vertices;
     
-    // Mapea el ID de la arista -> Datos de la arista (u, v, elemento)
-    std::unordered_map<int, AristaData> mapa_aristas;
+    // Mapea el ID de la arista -> Arista interna (u, v, elemento)
+    std::unordered_map<int, AristaInterna> mapa_aristas;
 
     // Mapeo inverso de mapa_vertices (Permite buscar en O(1) si un vértice existe)
     std::unordered_map<VType, int> mapa_id_vertices;
@@ -190,6 +190,20 @@ public:
         return mapa_aristas.at(e).elemento; 
     }
 
+    /**
+     *
+     * Esto toma tiempo O(deg(v)) <- Existen formas más eficientes
+     */
+    int getEdgeID(int v, int w) {
+        // Recorremos las aristas incidentes buscando si el vértice opuesto es w
+        for (int e : incidentEdges(v)) {
+            if (opposite(v, e) == w) {
+                return e;
+            }
+        }
+        return -1;
+    }
+
     int numVertices() { 
         return mapa_vertices.size(); 
     }
@@ -210,7 +224,7 @@ int buscarIdPorValor(Grafo<V, E>& grafo, const V& valor_buscado) {
 }
 
 // Función para imprimir como "Rayos X" lo que hay dentro de un vértice
-template <typename V, typename E>
+template <typename V, typename E>   
 void inspeccionarNodo(Grafo<V, E>& grafo, const V& valor, int max_conexiones_a_mostrar) {
     int id_nodo = buscarIdPorValor(grafo, valor);
     
@@ -235,7 +249,8 @@ void inspeccionarNodo(Grafo<V, E>& grafo, const V& valor, int max_conexiones_a_m
         int id_vecino = (extremos.first == id_nodo) ? extremos.second : extremos.first;
         
         std::cout << "  -> Conectado con: " << grafo.getVertexElement(id_vecino) 
-                  << " | Peso (Duracion/Colabs): " << grafo.getEdgeElement(id_arista) << "\n";
+                  << " | Peso Total: " << grafo.getEdgeElement(id_arista).peso_total 
+                  << " | Peso Mínimo: " << grafo.getEdgeElement(id_arista).peso_minimo << "\n";
     }
     
     if (aristas.size() > max_conexiones_a_mostrar) {
