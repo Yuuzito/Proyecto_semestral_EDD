@@ -225,7 +225,7 @@ int buscarIdPorValor(Grafo<V, E>& grafo, const V& valor_buscado) {
 
 // Función para imprimir como "Rayos X" lo que hay dentro de un vértice
 template <typename V, typename E>   
-void inspeccionarNodo(Grafo<V, E>& grafo, const V& valor, int max_conexiones_a_mostrar) {
+void inspeccionarNodo(Grafo<V, E>& grafo, const V& valor, long long unsigned int max_conexiones_a_mostrar) {
     int id_nodo = buscarIdPorValor(grafo, valor);
     
     if (id_nodo == -1) {
@@ -239,9 +239,9 @@ void inspeccionarNodo(Grafo<V, E>& grafo, const V& valor, int max_conexiones_a_m
     std::cout << "Tiene " << aristas.size() << " conexiones directas:\n";
     
     // Imprimir hasta un máximo de conexiones que desee el usuario
-    int limite = std::min((int)aristas.size(), max_conexiones_a_mostrar);
+    long long unsigned int limite = std::min((long long unsigned int)aristas.size(), max_conexiones_a_mostrar);
     
-    for (int i = 0; i < limite; i++) {
+    for (long long unsigned int i = 0; i < limite; i++) {
         int id_arista = aristas[i];
         std::pair<int, int> extremos = grafo.endVertices(id_arista);
         
@@ -250,7 +250,7 @@ void inspeccionarNodo(Grafo<V, E>& grafo, const V& valor, int max_conexiones_a_m
         
         std::cout << "  -> Conectado con: " << grafo.getVertexElement(id_vecino) 
                   << " | Peso Total: " << grafo.getEdgeElement(id_arista).peso_total 
-                  << " | Peso Mínimo: " << grafo.getEdgeElement(id_arista).peso_minimo << "\n";
+                  << " | Peso Minimo: " << grafo.getEdgeElement(id_arista).peso_minimo << "\n";
     }
     
     if (aristas.size() > max_conexiones_a_mostrar) {
