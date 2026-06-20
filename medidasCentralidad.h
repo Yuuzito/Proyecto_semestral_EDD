@@ -1,5 +1,5 @@
 #pragma once
-#include "GrafoRed.h"
+#include "grafoRed.h"
 #include <unordered_map>
 #include <vector>
 #include <cmath> // Para std::abs
