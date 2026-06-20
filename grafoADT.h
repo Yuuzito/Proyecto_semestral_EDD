@@ -42,7 +42,9 @@ public:
     // ==========================================
     // MÉTODOS DE ACCESO
     // ==========================================
-
+    bool esDirigido() const { 
+        return es_dirigido; 
+    }
     // Un arreglo (o par) con los dos puntos extremos de e
     std::pair<int, int> endVertices(int e) {
         if (mapa_aristas.find(e) == mapa_aristas.end()) throw std::invalid_argument("Arista no existe");

@@ -3,6 +3,9 @@
 #include <unordered_map>
 #include <vector>
 #include <cmath> // Para std::abs
+#include <queue>   
+#include <stack>   
+#include <limits>  
 
 template<typename VType>
 class AnalizadorCentralidad {
@@ -78,5 +81,112 @@ public:
             }
         }
         return pr;
+    }
+
+    /**
+     * @brief Calcula la centralidad de grado (Degree Centrality).
+     * Mide el nivel de conexiones de un vértice normalizado por (N - 1).
+     */
+    static std::unordered_map<int, double> calcularDegreeCentrality(GrafoRed<VType>& red) {
+        auto& grafo = red.getGrafo();
+        std::vector<int> nodos = grafo.vertices();
+        int N = nodos.size();
+        
+        std::unordered_map<int, double> degree_centrality;
+        if (N <= 1) return degree_centrality;
+
+        for (int u : nodos) {
+            double grado = grafo.incidentEdges(u).size();
+            degree_centrality[u] = grado / (N - 1.0);
+        }
+
+        return degree_centrality;
+    }
+
+    /**
+     * @brief Calcula el Betweenness Centrality usando el Algoritmo de Brandes (pesado).
+     * Mide cuántas veces un nodo aparece en el camino más corto entre otros dos nodos.
+     */
+    static std::unordered_map<int, double> calcularBetweennessCentrality(GrafoRed<VType>& red) {
+        auto& grafo = red.getGrafo();
+        std::vector<int> nodos = grafo.vertices();
+        std::unordered_map<int, double> betweenness;
+
+        for (int v : nodos) {
+            betweenness[v] = 0.0;
+        }
+
+        for (int s : nodos) {
+            std::stack<int> S; 
+            std::unordered_map<int, std::vector<int>> P; 
+            std::unordered_map<int, double> sigma; 
+            std::unordered_map<int, double> d; 
+
+            for (int v : nodos) {
+                sigma[v] = 0.0;
+                d[v] = std::numeric_limits<double>::infinity();
+            }
+
+            sigma[s] = 1.0;
+            d[s] = 0.0;
+
+            std::priority_queue<std::pair<double, int>, 
+                                std::vector<std::pair<double, int>>, 
+                                std::greater<std::pair<double, int>>> Q;
+            
+            Q.push({0.0, s});
+
+            while (!Q.empty()) {
+                double dist_v = Q.top().first;
+                int v = Q.top().second;
+                Q.pop();
+
+                if (dist_v > d[v]) continue;
+
+                S.push(v);
+
+                for (int e : grafo.incidentEdges(v)) {
+                    int w = grafo.opposite(v, e);
+                    double weight = grafo.getEdgeElement(e).peso_minimo; 
+
+                    if (d[w] > d[v] + weight) {
+                        d[w] = d[v] + weight;
+                        Q.push({d[w], w});
+                        sigma[w] = sigma[v];
+                        P[w].clear();
+                        P[w].push_back(v);
+                    } 
+                    else if (d[w] == d[v] + weight) {
+                        sigma[w] += sigma[v];
+                        P[w].push_back(v);
+                    }
+                }
+            }
+
+            std::unordered_map<int, double> delta;
+            for (int v : nodos) delta[v] = 0.0;
+
+            while (!S.empty()) {
+                int w = S.top();
+                S.pop();
+                
+                for (int v : P[w]) {
+                    if (sigma[w] != 0.0) { 
+                        delta[v] += (sigma[v] / sigma[w]) * (1.0 + delta[w]);
+                    }
+                }
+                if (w != s) {
+                    betweenness[w] += delta[w];
+                }
+            }
+        }
+
+        if (!grafo.esDirigido()) {
+            for (int v : nodos) {
+                betweenness[v] /= 2.0;
+            }
+        }
+
+        return betweenness;
     }
 };
