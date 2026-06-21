@@ -2,11 +2,32 @@
 
 #include <string>
 #include "grafoADT.h"
-#include "grafoRed.h"
 #include "extern/csv.h"
 
-namespace DatasetLoader {
+struct AristaData {
+    double peso_total;
+    double peso_minimo;
+};
 
+class RedUtilidades {
+private:
+    // ==========================================
+    // MÉTODOS AUXILIARES
+    // ==========================================
+
+    static AristaData crearArista(double peso) {
+        AristaData nuevaArista;
+        nuevaArista.peso_total = peso;
+        nuevaArista.peso_minimo = peso;
+        return nuevaArista;
+    }
+
+    static void actualizarAristaExistente(AristaData& actual, double nuevoPeso) {
+        actual.peso_total += nuevoPeso;
+        if (nuevoPeso < actual.peso_minimo) actual.peso_minimo = nuevoPeso;
+    }
+
+public:
     /**
      * @brief Carga los datos de un archivo CSV directamente en una instancia de GrafoRed.
      *
@@ -17,10 +38,10 @@ namespace DatasetLoader {
      * @param columnaDestino Nombre del header en el CSV para el nodo de destino.
      * @param columnaPeso Nombre del header en el CSV para el peso de la arista.
      */
-    template <typename V>
-    void cargarDatasetCSV(
+    template <typename VType>
+    static void cargarDatasetCSV(
         const std::string& nombreArchivo,
-        GrafoRed<V>& red,
+        Grafo<VType, AristaData>& G,
         const char* columnaOrigen,
         const char* columnaDestino,
         const char* columnaPeso
@@ -34,8 +55,8 @@ namespace DatasetLoader {
             std::string peso_str;
 
             while (in.read_row(origen, destino, peso_str)) {
-                int id_v1 = red.insertarNodo(origen);
-                int id_v2 = red.insertarNodo(destino);
+                int id_v1 = G.insertVertex(origen);
+                int id_v2 = G.insertVertex(destino);
 
                 // Conversión segura para el peso (Parseo del peso)
                 double peso = 0.0;
@@ -47,12 +68,25 @@ namespace DatasetLoader {
                         peso = 0.0;
                     }
                 }
-                
-                red.insertarConexion(id_v1, id_v2, peso);
+
+                int id_arista = G.getEdgeID(id_v1, id_v2);
+
+                if (id_arista != -1) {
+                    // CASO 1: Si la arista ya existe, actualizamos su struct y reemplazamos
+
+                    AristaData dataActual = G.getEdgeElement(id_arista);
+                    actualizarAristaExistente(dataActual, peso);
+                    G.replaceEdge(id_arista, dataActual);
+                }
+                else {
+                    // CASO 2: Si la arista no existe, creamos su struct e insertamos
+                    AristaData newData = crearArista(peso);
+                    G.insertEdge(id_v1, id_v2, newData);
+                }
             }
         }
         catch (const std::exception& e) {
             std::cerr << "error: " << nombreArchivo << " no ha cargado correctamente: " << e.what() << std::endl;
         }
     }
-}
+};
