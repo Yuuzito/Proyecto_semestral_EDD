@@ -62,13 +62,20 @@ public:
     /**
      * @brief Calcula las distancias mínimas desde un vértice de origen hacia todos los demás evaluando el peso de las aristas.
      *
+     * @tparam AtributoPeso Puntero al miembro del EType que se usa como peso.
+     *
      * @param G Referencia al grafo ponderado a explorar.
      * @param s ID del vértice de origen desde donde inicia la búsqueda.
+     * @param funcionPeso Puntero a función normal para extraer el peso de la arista.
      * @return std::unordered_map<int, double> Mapa con el par clave-valor: ID del vértice y su distancia mínima.
      */
-    static std::unordered_map<int, double> DijkstraShortestPath(Grafo<VType, EType>& G, int s) {
+    static std::unordered_map<int, double> DijkstraShortestPath(
+        Grafo<VType, EType>& G,
+        int s,
+        double (*funcionPeso)(EType)
+    ) {
         std::unordered_map<int, bool> visitado;
-        std::unordered_map<int, double> distancia;  // Double para pesos establecidos en AristaData
+        std::unordered_map<int, double> distancia;
         std::unordered_map<int, int> padre;
 
         // Alias para el par {distancia, id_vertice}
@@ -106,8 +113,8 @@ public:
             for (int e : G.incidentEdges(u)) {
                 int v = G.opposite(u, e);
 
-                // NOTA: se asume que EType será el struct DatosArista
-                double peso = G.getEdgeElement(e).peso_minimo;
+                // Acceso al atributo de peso especificado
+                double peso = funcionPeso(G.getEdgeElement(e));
 
                 if (distancia[u] + peso < distancia[v]) {
                     distancia[v] = distancia[u] + peso;

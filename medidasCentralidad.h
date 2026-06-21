@@ -1,5 +1,6 @@
 #pragma once
-#include "grafoRed.h"
+
+#include "grafoADT.h"
 #include "grafoUtilidades.h"
 #include <unordered_map>
 #include <vector>
@@ -8,23 +9,21 @@
 #include <stack>   
 #include <limits>  
 
-template<typename VType>
+template<typename VType, typename EType>
 class AnalizadorCentralidad {
 private:
     /**
      * @brief Método auxiliar para calcular Closeness Centrality (Centralida de cercanía)
+     *
      */
     static double calcularClosenessCentrality(
-        GrafoRed<VType>& red,
+        Grafo<VType, EType>& G,
         int u,
         int num_vertices,
         bool esPonderado,
-        bool esConexo
+        bool esConexo,
+        double (*funcionPeso)(EType)    
     ) {
-        auto& G = red.getGrafo();
-
-        using EType = decltype(G.getEdgeElement(0));
-
         double sum_distancias = 0.0;
         int nodos_alcanzables = 0;
 
@@ -40,7 +39,11 @@ private:
         }
         else {
             // Usar Dijkstra
-            auto distancias = GrafoUtilidades<VType, EType>::DijkstraShortestPath(G, u);
+            // Validar que se haya entregado una funcion peso
+            if (funcionPeso == nullptr) {
+                throw std::invalid_argument("Se requiere funcionPeso para Closeness Centrality si el grafo es ponderado.");
+            }
+            auto distancias = GrafoUtilidades<VType, EType>::DijkstraShortestPath(G, u, funcionPeso);
             for (const auto& par : distancias) {
                 if (par.second != INF && par.second != INT_MAX) {
                     sum_distancias += par.second;
@@ -70,14 +73,13 @@ public:
 
     /**
      * @brief Calcula la centralidad PageRank de los nodos.
-     * @param red Referencia al GrafoRed.
+     * @param G Referencia al Grafo.
      * @param d Factor de amortiguación (típicamente 0.85).
      * @param max_iter Límite de iteraciones para evitar ciclos infinitos.
      * @param tol Tolerancia para el criterio de convergencia.
      */
-    static std::unordered_map<int, double> calcularPageRank(GrafoRed<VType>& red, double d = 0.85, int max_iter = 100, double tol = 1e-6) {
-        auto& grafo = red.getGrafo();
-        std::vector<int> nodos = grafo.vertices();
+    static std::unordered_map<int, double> calcularPageRank(Grafo<VType, EType>& G, double d = 0.85, int max_iter = 100, double tol = 1e-6) {
+        std::vector<int> nodos = G.vertices();
         int N = nodos.size();
         
         std::unordered_map<int, double> pr;
@@ -102,7 +104,7 @@ public:
 
             // B. Fase de "Push" (Empujar PageRank a los vecinos)
             for (int u : nodos) {
-                std::vector<int> aristas_salida = grafo.incidentEdges(u);
+                std::vector<int> aristas_salida = G.incidentEdges(u);
                 int out_degree = aristas_salida.size();
 
                 if (out_degree > 0) {
@@ -110,7 +112,7 @@ public:
                     double pr_a_repartir = pr[u] / out_degree;
                     
                     for (int e : aristas_salida) {
-                        int v = grafo.opposite(u, e); // El nodo destino
+                        int v = G.opposite(u, e); // El nodo destino
                         next_pr[v] += d * pr_a_repartir;
                     }
                 } else {
@@ -144,16 +146,15 @@ public:
      * @brief Calcula la centralidad de grado (Degree Centrality).
      * Mide el nivel de conexiones de un vértice normalizado por (N - 1).
      */
-    static std::unordered_map<int, double> calcularDegreeCentrality(GrafoRed<VType>& red) {
-        auto& grafo = red.getGrafo();
-        std::vector<int> nodos = grafo.vertices();
+    static std::unordered_map<int, double> calcularDegreeCentrality(Grafo<VType, EType>& G) {
+        std::vector<int> nodos = G.vertices();
         int N = nodos.size();
         
         std::unordered_map<int, double> degree_centrality;
         if (N <= 1) return degree_centrality;
 
         for (int u : nodos) {
-            double grado = grafo.incidentEdges(u).size();
+            double grado = G.incidentEdges(u).size();
             degree_centrality[u] = grado / (N - 1.0);
         }
 
@@ -163,10 +164,16 @@ public:
     /**
      * @brief Calcula el Betweenness Centrality usando el Algoritmo de Brandes (pesado).
      * Mide cuántas veces un nodo aparece en el camino más corto entre otros dos nodos.
+     *
+     * @param funcionPeso Puntero a función normal para extraer el peso de la arista.
      */
-    static std::unordered_map<int, double> calcularBetweennessCentrality(GrafoRed<VType>& red) {
-        auto& grafo = red.getGrafo();
-        std::vector<int> nodos = grafo.vertices();
+    static std::unordered_map<int, double> calcularBetweennessCentrality(Grafo<VType, EType>& G, double (*funcionPeso)(EType)) {
+        // Validar que se haya entregado una función de peso
+        if (funcionPeso == nullptr) {
+            throw std::invalid_argument("Se requiere funcionPeso para Betweenness Centrality.");
+        }
+
+        std::vector<int> nodos = G.vertices();
         std::unordered_map<int, double> betweenness;
 
         for (int v : nodos) {
@@ -202,9 +209,9 @@ public:
 
                 S.push(v);
 
-                for (int e : grafo.incidentEdges(v)) {
-                    int w = grafo.opposite(v, e);
-                    double weight = grafo.getEdgeElement(e).peso_minimo; 
+                for (int e : G.incidentEdges(v)) {
+                    int w = G.opposite(v, e);
+                    double weight = funcionPeso(G.getEdgeElement(e)); 
 
                     if (d[w] > d[v] + weight) {
                         d[w] = d[v] + weight;
@@ -238,7 +245,7 @@ public:
             }
         }
 
-        if (!grafo.esDirigido()) {
+        if (!G.esDirigido()) {
             for (int v : nodos) {
                 betweenness[v] /= 2.0;
             }
@@ -249,33 +256,32 @@ public:
 
     /**
      * @brief Mide la centralidad de cercanía (Closeness Centrality) en la red.
-     * @param red Referencia a la red.
+     * @param G Referencia al grafo.
      * @param u Si es -1, se calcula Closeness Centrality para toda la red
      * @param esPonderado Si es true, usa Dijkstra para el camino más corto. Si es false, usa BFS.
      * @param esConexo Si es false, usa la variante de Wasserman and Faust para grafos con más de una componente conexa.
-     * @return Un std::unordered_map con el ID del vértice y su valor de centralidad.
+     * @param funcionPeso Puntero a función normal para extraer el peso de la arista.
+     * @return std::unordered_map con el ID del vértice y su valor de centralidad.
      */
     static std::unordered_map<int, double> ClosenessCentrality(
-        GrafoRed<VType>& red,
+        Grafo<VType, EType>& G,
         int u = -1,
         bool esPonderado = true,
-        bool esConexo = true
+        bool esConexo = true,
+        double (*funcionPeso)(EType) = nullptr
     ) {
-
-        auto& G = red.getGrafo();
         std::unordered_map<int, double> closeness_centrality;
-        std::vector<int> vertices = G.vertices();
-        int num_vertices = vertices.size();
+        int num_vertices = G.vertices.size();
 
         if (u == -1) {
             // Calculamos Closeness Centrality para todos los vértices del grafo.
-            for (int v : vertices) {
-                closeness_centrality[v] = calcularClosenessCentrality(red, v, num_vertices, esPonderado, esConexo);
+            for (int v : G.vertices) {
+                closeness_centrality[v] = calcularClosenessCentrality(G, v, num_vertices, esPonderado, esConexo, funcionPeso);
             }
         }
         else {
             // Si no, calculamos solamente para el vértice "u"
-            closeness_centrality[u] = calcularClosenessCentrality(red, u, num_vertices, esPonderado, esConexo);
+            closeness_centrality[u] = calcularClosenessCentrality(G, u, num_vertices, esPonderado, esConexo, funcionPeso);
         }
 
         return closeness_centrality;

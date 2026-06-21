@@ -1,14 +1,15 @@
+#pragma once
+
+#include "medidasCentralidad.h"
 #include <iostream>
 #include <vector>
 #include <chrono>
 #include <numeric>
 #include <iomanip>
 #include <string>
-#include "grafoRed.h"
-#include "medidasCentralidad.h"
 
-template <typename VType, typename Func>
-void medirRendimientoCentralidad(GrafoRed<VType>& red, Func funcion_centralidad, const std::string& nombre_medida, int repeticiones = 10) {
+template <typename VType, typename EType, typename Func>
+void medirRendimientoCentralidad(Grafo<VType, EType>& G, Func funcion_centralidad, const std::string& nombre_medida, int repeticiones = 10) {
     std::vector<double> tiempos_ms(repeticiones);
 
     std::cout << "\nIniciando medicion de rendimiento para: [" << nombre_medida << "] (" << repeticiones << " iteraciones)...\n";
@@ -17,7 +18,7 @@ void medirRendimientoCentralidad(GrafoRed<VType>& red, Func funcion_centralidad,
         auto inicio = std::chrono::high_resolution_clock::now();
 
         // Ejecutamos la función que pasaste por parámetro
-        funcion_centralidad(red);
+        funcion_centralidad(G);
 
         auto fin = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double, std::milli> duracion = fin - inicio;

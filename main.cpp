@@ -1,5 +1,5 @@
 #include <iostream>
-#include <iomanip> // Para std::setprecision
+#include <iomanip>
 #include <string>
 
 #include "grafoADT.h"
