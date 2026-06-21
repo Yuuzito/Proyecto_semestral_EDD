@@ -52,7 +52,7 @@ namespace DatasetLoader {
             }
         }
         catch (const std::exception& e) {
-            std::cerr << "error: " << nombreArchivo << "no ha cargado correctamente: " << e.what() << std::endl;
+            std::cerr << "error: " << nombreArchivo << " no ha cargado correctamente: " << e.what() << std::endl;
         }
     }
 }

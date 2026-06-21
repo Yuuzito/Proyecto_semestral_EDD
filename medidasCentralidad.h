@@ -1,5 +1,6 @@
 #pragma once
 #include "grafoRed.h"
+#include "grafoUtilidades.h"
 #include <unordered_map>
 #include <vector>
 #include <cmath> // Para std::abs
@@ -9,6 +10,62 @@
 
 template<typename VType>
 class AnalizadorCentralidad {
+private:
+    /**
+     * @brief Método auxiliar para calcular Closeness Centrality (Centralida de cercanía)
+     */
+    static double calcularClosenessCentrality(
+        GrafoRed<VType>& red,
+        int u,
+        int num_vertices,
+        bool esPonderado,
+        bool esConexo
+    ) {
+        auto& G = red.getGrafo();
+
+        using EType = decltype(G.getEdgeElement(0));
+
+        double sum_distancias = 0.0;
+        int nodos_alcanzables = 0;
+
+        if (!esPonderado) {
+            // Usar BFS
+            auto distancias = GrafoUtilidades<VType, EType>::BFS(G, u);
+            for (const auto& par : distancias) {
+                if (par.second != INF && par.second != INT_MAX) {
+                    sum_distancias += par.second;
+                    nodos_alcanzables++;
+                }
+            }
+        }
+        else {
+            // Usar Dijkstra
+            auto distancias = GrafoUtilidades<VType, EType>::DijkstraShortestPath(G, u);
+            for (const auto& par : distancias) {
+                if (par.second != INF && par.second != INT_MAX) {
+                    sum_distancias += par.second;
+                    nodos_alcanzables++;
+                }
+            }
+        }
+
+        // Calcular mediante Fórmula
+        if (sum_distancias > 0.0 && num_vertices > 1) {
+            double closeness_centralidad = (nodos_alcanzables - 1.0) / sum_distancias;
+
+            if (!esConexo) {
+                double s = (nodos_alcanzables - 1.0) / (num_vertices - 1.0);
+                closeness_centralidad *= s;
+            }
+
+            return closeness_centralidad;
+        }
+        else {
+            return 0.0;
+        }
+    }
+
+
 public:
 
     /**
@@ -188,5 +245,43 @@ public:
         }
 
         return betweenness;
+    }
+
+    /**
+     * @brief Mide la centralidad de cercanía (Closeness Centrality) en la red.
+     * @param red Referencia a la red.
+     * @param u Si es -1, se calcula Closeness Centrality para toda la red
+     * @param esPonderado Si es true, usa Dijkstra para el camino más corto. Si es false, usa BFS.
+     * @param esConexo Si es false, usa la variante de Wasserman and Faust para grafos con más de una componente conexa.
+     * @return Un std::unordered_map con el ID del vértice y su valor de centralidad.
+     */
+    static std::unordered_map<int, double> ClosenessCentrality(
+        GrafoRed<VType>& red,
+        int u = -1,
+        bool esPonderado = true,
+        bool esConexo = true
+    ) {
+
+        auto& G = red.getGrafo();
+        std::unordered_map<int, double> closeness_centrality;
+        std::vector<int> vertices = G.vertices();
+        int num_vertices = vertices.size();
+
+        if (u == -1) {
+            // Calculamos Closeness Centrality para todos los vértices del grafo.
+            for (int v : vertices) {
+                closeness_centrality[v] = calcularClosenessCentrality(red, v, num_vertices, esPonderado, esConexo);
+            }
+        }
+        else {
+            // Si no, calculamos solamente para el vértice "u"
+            closeness_centrality[u] = calcularClosenessCentrality(red, u, num_vertices, esPonderado, esConexo);
+        }
+
+        return closeness_centrality;
+    }
+
+    static void calcularAverageShortestPath() {
+
     }
 };
