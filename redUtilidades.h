@@ -7,6 +7,18 @@
 struct AristaData {
     double peso_total;
     double peso_minimo;
+
+    // =======
+    // Métodos estáticos usados como funciones extractoras
+    // =======
+
+    static double getPesoMinimo(AristaData arista) {
+        return arista.peso_minimo;
+    }
+
+    static double getPesoTotal(AristaData arista) {
+        return arista.peso_total;
+    }
 };
 
 class RedUtilidades {
@@ -31,7 +43,8 @@ public:
     /**
      * @brief Carga los datos de un archivo CSV directamente en una instancia de GrafoRed.
      *
-     * @tparam V Tipo de dato que representan los vértices (ej. string).
+     * @tparam VType Tipo de dato que representan los vértices (ej. string).
+     *
      * @param nombreArchivo Ruta o nombre del archivo CSV a procesar.
      * @param red Referencia al GrafoRed que almacenará los datos.
      * @param columnaOrigen Nombre del header en el CSV para el nodo de origen.
@@ -80,6 +93,7 @@ public:
                 }
                 else {
                     // CASO 2: Si la arista no existe, creamos su struct e insertamos
+                    
                     AristaData newData = crearArista(peso);
                     G.insertEdge(id_v1, id_v2, newData);
                 }

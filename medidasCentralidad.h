@@ -265,17 +265,17 @@ public:
      */
     static std::unordered_map<int, double> ClosenessCentrality(
         Grafo<VType, EType>& G,
+        double (*funcionPeso)(EType) = nullptr,
         int u = -1,
         bool esPonderado = true,
-        bool esConexo = true,
-        double (*funcionPeso)(EType) = nullptr
+        bool esConexo = true
     ) {
         std::unordered_map<int, double> closeness_centrality;
-        int num_vertices = G.vertices.size();
+        int num_vertices = G.vertices().size();
 
         if (u == -1) {
             // Calculamos Closeness Centrality para todos los vértices del grafo.
-            for (int v : G.vertices) {
+            for (int v : G.vertices()) {
                 closeness_centrality[v] = calcularClosenessCentrality(G, v, num_vertices, esPonderado, esConexo, funcionPeso);
             }
         }

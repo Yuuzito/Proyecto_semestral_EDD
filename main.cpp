@@ -10,14 +10,14 @@
 
 int main() {
     // ==========================================
-    // 1. INSTANCIACIÓN DE LAS REDES
+    // INSTANCIACIÓN DE LAS REDES
     // ==========================================
     Grafo<std::string, AristaData> redActores(false);       // false = no dirigido
     Grafo<std::string, AristaData> redIoT(true);            // true = dirigido
     Grafo<std::string, AristaData> redNetScience(false);    // false = no dirigido
 
     // ==========================================
-    // 2. CARGAR DATASETS
+    // CARGAR DATASETS
     // ==========================================
     std::cout << "Cargando datasets...\n";
 
@@ -27,7 +27,7 @@ int main() {
         std::string ruta_IoT = "..\\datasets\\train_test_network.csv";
         std::string ruta_NetScience = "..\\datasets\\NetScience.csv";
     #else
-        // Sin el "../" porque tu ejecutable y la carpeta datasets están al mismo nivel
+        // Sin el "../"
         std::string ruta_Actores = "datasets/imdb_edgelist.csv";
         std::string ruta_IoT = "datasets/train_test_network.csv";
         std::string ruta_NetScience = "datasets/NetScience.csv";
@@ -41,6 +41,131 @@ int main() {
     std::cout << "Red de Actores: " << redActores.numVertices() << " nodos, " << redActores.edges().size() << " conexiones.\n";
     std::cout << "Red de IoT: " << redIoT.numVertices() << " nodos, " << redIoT.edges().size() << " conexiones.\n";
     std::cout << "Red NetScience: " << redNetScience.numVertices() << " nodos, " << redNetScience.edges().size() << " conexiones.\n";
+
+    // ==========================================
+    // BUSCAR EL NODO CON MAYOR PAGERANK
+    // ==========================================
+    auto resultados_pr = AnalizadorCentralidad<std::string, AristaData>::calcularPageRank(redActores);
+
+    if (!resultados_pr.empty()) {
+        int id_max = -1;
+        double max_score = -1.0; 
+
+        // Recorremos todos los resultados para buscar el mayor
+        for (const auto& par : resultados_pr) {
+            int id_actual = par.first;
+            double score_actual = par.second;
+
+            if (score_actual > max_score) {
+                max_score = score_actual;
+                id_max = id_actual;
+            }
+        }
+
+        // Recuperamos el nombre del nodo usando su ID interno
+        std::string nombre_ganador = redActores.getVertexElement(id_max);
+
+        std::cout << "\n========================================\n";
+        std::cout << "  EL NODO MAS IMPORTANTE (MAYOR PAGERANK)\n";
+        std::cout << "========================================\n";
+        std::cout << "Nodo: " << nombre_ganador << "\n";
+        std::cout << "Score: " << std::fixed << std::setprecision(4) << max_score << "\n";
+        std::cout << "========================================\n";
+    } else {
+        std::cout << "La red de Actores esta vacia, no hay PageRank que mostrar.\n";
+    }
+
+    // ==========================================
+    // PRUEBA: MAYOR DEGREE CENTRALITY
+    // ==========================================
+    auto resultados_dc = AnalizadorCentralidad<std::string, AristaData>::calcularDegreeCentrality(redActores);
+
+    if (!resultados_dc.empty()) {
+        int id_max_dc = -1;
+        double max_score_dc = -1.0; 
+
+        for (const auto& par : resultados_dc) {
+            if (par.second > max_score_dc) {
+                max_score_dc = par.second;
+                id_max_dc = par.first;
+            }
+        }
+
+        std::string nombre_ganador_dc = redActores.getVertexElement(id_max_dc);
+
+        std::cout << "\n========================================\n";
+        std::cout << " MAYOR DEGREE CENTRALITY (Mas conexiones)\n";
+        std::cout << "========================================\n";
+        std::cout << "Red evaluada: Actores\n";
+        std::cout << "Nodo: " << nombre_ganador_dc << "\n";
+        std::cout << "Score: " << std::fixed << std::setprecision(4) << max_score_dc << "\n";
+        std::cout << "========================================\n";
+    }
+
+    // ==========================================
+    // PRUEBA: MAYOR BETWEENNESS CENTRALITY
+    // ==========================================
+    auto resultados_bc = AnalizadorCentralidad<std::string, AristaData>::calcularBetweennessCentrality(
+        redIoT,
+        AristaData::getPesoMinimo
+    );
+
+    if (!resultados_bc.empty()) {
+        int id_max_bc = -1;
+        double max_score_bc = -1.0; 
+
+        for (const auto& par : resultados_bc) {
+            if (par.second > max_score_bc) {
+                max_score_bc = par.second;
+                id_max_bc = par.first;
+            }
+        }
+
+        std::string nombre_ganador_bc = redIoT.getVertexElement(id_max_bc);
+
+        std::cout << "\n========================================\n";
+        std::cout << " MAYOR BETWEENNESS CENTRALITY (Nodo Puente)\n";
+        std::cout << "========================================\n";
+        std::cout << "Red evaluada: IoT\n";
+        std::cout << "Nodo (IP): " << nombre_ganador_bc << "\n";
+        std::cout << "Score: " << std::fixed << std::setprecision(4) << max_score_bc << "\n";
+        std::cout << "========================================\n";
+    }
+
+    // ==========================================
+    // PRUEBA: MAYOR CLOSENESS CENTRALITY
+    // ==========================================
+    auto resultados_cc = AnalizadorCentralidad<std::string, AristaData>::ClosenessCentrality(
+        redNetScience,
+        AristaData::getPesoMinimo,
+        -1,     // ID del vértice (-1 para todos)
+        true,   // esPonderado
+        true   // esConexo
+    );
+
+    if (!resultados_cc.empty()) {
+        int id_max_cc = -1;
+        double max_score_cc = -1.0; 
+
+        for (const auto& par : resultados_cc) {
+            if (par.second > max_score_cc) {
+                max_score_cc = par.second;
+                id_max_cc = par.first;
+            }
+        }
+
+        std::string nombre_ganador_cc = redNetScience.getVertexElement(id_max_cc);
+
+        std::cout << "\n========================================\n";
+        std::cout << " NODO CON MAYOR CLOSENESS CENTRALITY\n";
+        std::cout << "========================================\n";
+        std::cout << "Red evaluada: NetScience\n";
+        std::cout << "Nodo: " << nombre_ganador_cc << "\n";
+        std::cout << "Score: " << std::fixed << std::setprecision(4) << max_score_cc << "\n";
+        std::cout << "========================================\n";
+    } else {
+        std::cout << "La red de NetScience esta vacia.\n";
+    }
 
     return 0;
 }
