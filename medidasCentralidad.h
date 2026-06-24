@@ -7,68 +7,10 @@
 #include <cmath> // Para std::abs
 #include <queue>   
 #include <stack>   
-#include <limits>  
+#include <limits>
 
 template<typename VType, typename EType>
 class AnalizadorCentralidad {
-private:
-    /**
-     * @brief Método auxiliar para calcular Closeness Centrality (Centralida de cercanía)
-     *
-     */
-    static double calcularClosenessCentrality(
-        Grafo<VType, EType>& G,
-        int u,
-        int num_vertices,
-        bool esPonderado,
-        bool esConexo,
-        double (*funcionPeso)(EType)    
-    ) {
-        double sum_distancias = 0.0;
-        int nodos_alcanzables = 0;
-
-        if (!esPonderado) {
-            // Usar BFS
-            auto distancias = GrafoUtilidades<VType, EType>::BFS(G, u);
-            for (const auto& par : distancias) {
-                if (par.second != INF && par.second != INT_MAX) {
-                    sum_distancias += par.second;
-                    nodos_alcanzables++;
-                }
-            }
-        }
-        else {
-            // Usar Dijkstra
-            // Validar que se haya entregado una funcion peso
-            if (funcionPeso == nullptr) {
-                throw std::invalid_argument("Se requiere funcionPeso para Closeness Centrality si el grafo es ponderado.");
-            }
-            auto distancias = GrafoUtilidades<VType, EType>::DijkstraShortestPath(G, u, funcionPeso);
-            for (const auto& par : distancias) {
-                if (par.second != INF && par.second != INT_MAX) {
-                    sum_distancias += par.second;
-                    nodos_alcanzables++;
-                }
-            }
-        }
-
-        // Calcular mediante Fórmula
-        if (sum_distancias > 0.0 && num_vertices > 1) {
-            double closeness_centralidad = (nodos_alcanzables - 1.0) / sum_distancias;
-
-            if (!esConexo) {
-                double s = (nodos_alcanzables - 1.0) / (num_vertices - 1.0);
-                closeness_centralidad *= s;
-            }
-
-            return closeness_centralidad;
-        }
-        else {
-            return 0.0;
-        }
-    }
-
-
 public:
 
     /**
@@ -255,39 +197,130 @@ public:
     }
 
     /**
-     * @brief Mide la centralidad de cercanía (Closeness Centrality) en la red.
+     * @brief Mide la Centralidad de Cercanía (Closeness Centrality). Se puede calcular para toda la red o para un vértice específico.
+     *
      * @param G Referencia al grafo.
      * @param u Si es -1, se calcula Closeness Centrality para toda la red
-     * @param esPonderado Si es true, usa Dijkstra para el camino más corto. Si es false, usa BFS.
-     * @param esConexo Si es false, usa la variante de Wasserman and Faust para grafos con más de una componente conexa.
-     * @param funcionPeso Puntero a función normal para extraer el peso de la arista.
-     * @return std::unordered_map con el ID del vértice y su valor de centralidad.
+     * @param esConexo Booleano que indica si el grafo es conexo (true) o no es conexo (false: usa la variante de Wasserman y Faust para componentes no conexas).
+     * @param funcionPeso Puntero a función para extraer el peso de la arista (solo si es ponderado).
+     *
+     * @return unordered_map con el ID del vértice y su valor de centralidad.
      */
     static std::unordered_map<int, double> ClosenessCentrality(
         Grafo<VType, EType>& G,
-        double (*funcionPeso)(EType) = nullptr,
         int u = -1,
-        bool esPonderado = true,
-        bool esConexo = true
+        bool esConexo = true,
+        double (*funcionPeso)(EType) = nullptr
     ) {
+
         std::unordered_map<int, double> closeness_centrality;
         int num_vertices = G.vertices().size();
 
+        // Determinar qué vértices procesar
+        std::vector<int> vertices_a_procesar;
         if (u == -1) {
-            // Calculamos Closeness Centrality para todos los vértices del grafo.
-            for (int v : G.vertices()) {
-                closeness_centrality[v] = calcularClosenessCentrality(G, v, num_vertices, esPonderado, esConexo, funcionPeso);
-            }
+            // Todos los vértices del grafo
+            vertices_a_procesar = G.vertices();
         }
         else {
-            // Si no, calculamos solamente para el vértice "u"
-            closeness_centrality[u] = calcularClosenessCentrality(G, u, num_vertices, esPonderado, esConexo, funcionPeso);
+            // El vértice u recibido como parametro
+            vertices_a_procesar.push_back(u);
         }
 
+        for (int v : vertices_a_procesar) {
+            double suma_distancias = 0.0;
+            int nodos_alcanzables = 0;
+            std::unordered_map<int, double> distancias;
+
+            if (funcionPeso == nullptr) {
+                // Usar BFS
+                distancias = GrafoUtilidades<VType, EType>::BFS(G, v);
+            }
+            else {
+                // Usar Dijkstra
+                distancias = GrafoUtilidades<VType, EType>::DijkstraShortestPath(G, v, funcionPeso);
+            }
+
+            // Calcular la suma de las distancias y nodos alcanzables
+            for (const auto& par : distancias) {
+                if (par.second != INF) {
+                    suma_distancias += par.second;
+                    nodos_alcanzables++;
+                }
+            }
+
+            // Aplicamos Fórmula
+            if (suma_distancias > 0.0 && num_vertices > 1) {
+                // Fórmula estándar (Nodos alcanzables / la suma de distancias)
+                double f_centrality = (nodos_alcanzables - 1.0) / suma_distancias;
+
+                // Normalización de Wasserman and Faust para grafos no conexos
+                if (!esConexo) {
+                    double s = (nodos_alcanzables - 1.0) / (num_vertices - 1.0);
+                    f_centrality *= s;
+                }
+
+                closeness_centrality[v] = f_centrality;
+            } else {
+                closeness_centrality[v] = 0.0;
+            }
+        }
+    
         return closeness_centrality;
     }
 
-    static void calcularAverageShortestPath() {
+    /**
+     * @brief Mide la Longitud Promedio del Camino Más Corto (Average Shortest Path Length). Se calcula sobre todos los pares de nodos alcanzables en la red.
+     *
+     * @param G Referencia al grafo.
+     * @param funcionPeso Puntero a función para extraer el peso de la arista (solo si es ponderado).
+     *
+     * @return double El promedio de las distancias más cortas válidas.
+     */
+    static double AverageShortestPath(Grafo<VType, EType>& G, double (*funcionPeso)(EType) = nullptr) {
 
+        int num_vertices = G.vertices().size();
+        // Si hay 1 o 0 nodos, no hay caminos posibles
+        if (num_vertices <= 1) return 0.0;
+
+        double suma_total_distancias = 0.0;
+        long long pares_validos = 0;
+        int procesados = 0;
+
+        for (int i : G.vertices()) {
+            procesados++;
+            // Imprime cada 100 nodos. \r hace que se sobreescriba la misma línea.
+            if (procesados % 100 == 0) {
+                std::cout << "Procesando nodo " << procesados << " de " << num_vertices << "\r" << std::flush;
+            }
+
+            std::unordered_map<int, double> distancias;
+
+            if (funcionPeso == nullptr) {
+                // Usar BFS
+                distancias = GrafoUtilidades<VType, EType>::BFS(G, i);
+            }
+            else {
+                // Usar Dijkstra
+                distancias = GrafoUtilidades<VType, EType>::DijkstraShortestPath(G, i, funcionPeso);
+            }
+
+            for (const auto& par : distancias) {
+                int j = par.first;
+                double distancia = par.second;
+
+                if (i != j && distancia != INF) {
+                    suma_total_distancias += distancia;
+                    pares_validos++;
+                }
+            }
+        }
+
+        // Si el grafo no tiene aristas o está totalmente desconectado
+        if (pares_validos == 0) return 0.0;
+
+        // Fórmula: SUMATORIA (distancia mínima entre el nodo i y el nodo j) / N(N-1)
+        // Retornamos la sumatoria dividida por los caminos que realmente existían (Esto para grafos conexos y no conexos)
+        return suma_total_distancias / pares_validos;
     }
 };

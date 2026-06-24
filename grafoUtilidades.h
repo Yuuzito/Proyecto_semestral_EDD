@@ -3,9 +3,9 @@
 #include "grafoADT.h"
 #include <queue>
 #include <unordered_map>
-#include <climits>
+#include <limits>
 
-const int INF = INT_MAX;
+const double INF = std::numeric_limits<double>::infinity();
 
 template <typename VType, typename EType>
 class GrafoUtilidades {
@@ -18,9 +18,9 @@ public:
      * @param s ID del vértice de origen desde donde inicia la búsqueda.
      * @return std::unordered_map<int, int> Mapa con el par clave-valor: ID del vértice y su distancia mínima.
      */
-    static std::unordered_map<int, int> BFS(Grafo<VType, EType>& G, int s) {
+    static std::unordered_map<int, double> BFS(Grafo<VType, EType>& G, int s) {
         std::unordered_map<int, bool> visitado;
-        std::unordered_map<int, int> distancia;
+        std::unordered_map<int, double> distancia;
         std::unordered_map<int, int> padre;     // Guarda el camino más corto
 
         std::queue<int> Q;
@@ -34,7 +34,7 @@ public:
 
         // Inicializamos el vértice de origen "s"
         visitado[s] = true;
-        distancia[s] = 0;
+        distancia[s] = 0.0;
         Q.push(s);
 
         while (!Q.empty()) {
@@ -91,8 +91,8 @@ public:
         }
 
         // Inicializamos el vértice de origen
-        distancia[s] = 0;
-        Q.push({ 0, s });
+        distancia[s] = 0.0;
+        Q.push({ 0.0, s });
 
         while (!Q.empty()) {
             // Q.removeMin(): extraemos el vértice con la menor distancia.
@@ -128,5 +128,7 @@ public:
 
         return distancia;
     }
+
+
 
 };

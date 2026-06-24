@@ -137,10 +137,9 @@ int main() {
     // ==========================================
     auto resultados_cc = AnalizadorCentralidad<std::string, AristaData>::ClosenessCentrality(
         redNetScience,
-        AristaData::getPesoMinimo,
-        -1,     // ID del vértice (-1 para todos)
-        true,   // esPonderado
-        true   // esConexo
+        -1,
+        true,
+        AristaData::getPesoMinimo
     );
 
     if (!resultados_cc.empty()) {
@@ -166,6 +165,28 @@ int main() {
     } else {
         std::cout << "La red de NetScience esta vacia.\n";
     }
+
+    // ==========================================
+    // PRUEBA: AVERAGE SHORTEST PATH
+    // ==========================================
+
+    // Prueba Ponderada (Ej. NetScience)
+    double avg_path_netscience = AnalizadorCentralidad<std::string, AristaData>::AverageShortestPath(
+        redNetScience,
+        AristaData::getPesoMinimo
+    );
+    
+    std::cout << "\nAverage Shortest Path (NetScience): " << avg_path_netscience << "\n";
+
+    /* ESTA PRUEBA DEMORA COMO 30min xd
+    // Prueba NO Ponderada (Ej. Actores - No requiere función de peso)
+    double avg_path_actores = AnalizadorCentralidad<std::string, AristaData>::AverageShortestPath(
+        redActores,
+        nullptr
+    );
+
+    std::cout << "Average Shortest Path (Actores): " << avg_path_actores << "\n";
+    */
 
     return 0;
 }
