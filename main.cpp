@@ -19,7 +19,7 @@ int main() {
     // ==========================================
     // CARGAR DATASETS
     // ==========================================
-    std::cout << "Cargando datasets...\n";
+    std::cout << "\nCargando datasets...\n";
 
     // Selección de rutas para Windows y Linux
     #ifdef _WIN32
@@ -33,15 +33,39 @@ int main() {
         std::string ruta_NetScience = "datasets/NetScience.csv";
     #endif
 
+    auto inicio_actores = std::chrono::high_resolution_clock::now();
     RedUtilidades::cargarDatasetCSV(ruta_Actores, redActores, "From", "To", "Strength");
+    auto fin_actores = std::chrono::high_resolution_clock::now();
+
+    auto inicio_IoT = std::chrono::high_resolution_clock::now();
     RedUtilidades::cargarDatasetCSV(ruta_IoT, redIoT, "src_ip", "dst_ip", "duration");
+    auto fin_IoT = std::chrono::high_resolution_clock::now();
+
+    auto inicio_NetScience = std::chrono::high_resolution_clock::now();
     RedUtilidades::cargarDatasetCSV(ruta_NetScience, redNetScience, "Source", "Target", "Weight");
+    auto fin_NetScience = std::chrono::high_resolution_clock::now();
 
+    double memoriaActoresMB = redActores.estimarMemoriaBytes() / (1024.0 * 1024.0);
+    double memoriaIoTMB = redIoT.estimarMemoriaBytes() / (1024.0 * 1024.0);
+    double memoriaNetScienceMB = redNetScience.estimarMemoriaBytes() / (1024.0 * 1024.0);
+
+    std::cout << "========================================\n";
     std::cout << "Datasets cargados exitosamente.\n";
-    std::cout << "Red de Actores: " << redActores.numVertices() << " nodos, " << redActores.edges().size() << " conexiones.\n";
-    std::cout << "Red de IoT: " << redIoT.numVertices() << " nodos, " << redIoT.edges().size() << " conexiones.\n";
-    std::cout << "Red NetScience: " << redNetScience.numVertices() << " nodos, " << redNetScience.edges().size() << " conexiones.\n";
+    std::cout << "========================================\n";
 
+    std::cout << "Red de Actores: " << redActores.numVertices() << " nodos, " << redActores.edges().size() << " conexiones.\n" 
+              << "Tiempo de carga: " << std::chrono::duration<double, std::milli>(fin_actores - inicio_actores).count() << " ms\n"
+              << "Espacio en memoria: " << std::fixed << std::setprecision(2) << memoriaActoresMB << " MB\n\n";
+
+    std::cout << "Red de IoT: " << redIoT.numVertices() << " nodos, " << redIoT.edges().size() << " conexiones.\n"
+              << "Tiempo de carga: " << std::chrono::duration<double, std::milli>(fin_IoT - inicio_IoT).count() << " ms\n"
+              << "Espacio en memoria: " << std::fixed << std::setprecision(2) << memoriaIoTMB << " MB\n\n";
+
+    std::cout << "Red NetScience: " << redNetScience.numVertices() << " nodos, " << redNetScience.edges().size() << " conexiones.\n"
+              << "Tiempo de carga: " << std::chrono::duration<double, std::milli>(fin_NetScience - inicio_NetScience).count() << " ms\n"
+              << "Espacio en memoria: " << std::fixed << std::setprecision(2) << memoriaNetScienceMB << " MB\n";
+    std::cout << "========================================\n";
+    /*
     // ==========================================
     // BUSCAR EL NODO CON MAYOR PAGERANK
     // ==========================================
@@ -68,6 +92,7 @@ int main() {
         std::cout << "\n========================================\n";
         std::cout << "  EL NODO MAS IMPORTANTE (MAYOR PAGERANK)\n";
         std::cout << "========================================\n";
+        std::cout << "Red evaluada: Actores\n";
         std::cout << "Nodo: " << nombre_ganador << "\n";
         std::cout << "Score: " << std::fixed << std::setprecision(4) << max_score << "\n";
         std::cout << "========================================\n";
@@ -176,17 +201,54 @@ int main() {
         AristaData::getPesoMinimo
     );
     
-    std::cout << "\nAverage Shortest Path (NetScience): " << avg_path_netscience << "\n";
-
+    std::cout << "\n\n========================================\n";
+        std::cout << " Average Shortest Path\n";
+        std::cout << "========================================\n";
+        std::cout << "Red evaluada: NetScience\n";
+        std::cout << "Score: " << std::fixed << std::setprecision(4) << avg_path_netscience << "\n";
+        std::cout << "========================================\n";
+    */
     /* ESTA PRUEBA DEMORA COMO 30min xd
     // Prueba NO Ponderada (Ej. Actores - No requiere función de peso)
     double avg_path_actores = AnalizadorCentralidad<std::string, AristaData>::AverageShortestPath(
         redActores,
         nullptr
     );
-
-    std::cout << "Average Shortest Path (Actores): " << avg_path_actores << "\n";
     */
+   
+    // ==========================================
+    // MEDIDAS Y RENDIMIENTO
+    // ==========================================
+    // PageRank - Red Actores
+    auto resPR = AnalizadorCentralidad<std::string, AristaData>::calcularPageRank(redActores);
+    medirRendimientoCentralidad(redActores, [](auto& G) {
+        auto res = AnalizadorCentralidad<std::string, AristaData>::calcularPageRank(G);
+    }, "PageRank - Red de Actores");
 
+    // Degree Centrality - Red IoT
+    medirRendimientoCentralidad(redIoT, [](auto& G) {
+        auto res = AnalizadorCentralidad<std::string, AristaData>::calcularDegreeCentrality(G);
+    }, "Degree Centrality - Red IoT");
+
+    // Betweenness Centrality - Red IoT (requiere extractor de peso)
+    medirRendimientoCentralidad(redIoT, [](auto& G) {
+        auto extractor = [](AristaData a) { return a.peso_total; };
+        auto res = AnalizadorCentralidad<std::string, AristaData>::calcularBetweennessCentrality(G, extractor);
+    }, "Betweenness Centrality - Red IoT");
+
+    // Closeness Centrality - Red NetScience
+    medirRendimientoCentralidad(redNetScience, [](auto& G) {
+        auto res = AnalizadorCentralidad<std::string, AristaData>::ClosenessCentrality(G);
+    }, "Closeness Centrality - Red NetScience");
+
+    // Average Shortest Path - Red NetScience
+    medirRendimientoCentralidad(redNetScience, [](auto& G) {
+        auto res = AnalizadorCentralidad<std::string, AristaData>::AverageShortestPath(G);
+    }, "Average Shortest Path - Red NetScience");
+
+    // Eigenvector Centrality - Red IoT
+    medirRendimientoCentralidad(redIoT, [](auto& G) {
+        auto res = AnalizadorCentralidad<std::string, AristaData>::calcularEigenvectorCentrality(G);
+    }, "Eigenvector Centrality - Red IoT");
     return 0;
 }

@@ -27,24 +27,24 @@ public:
         std::unordered_map<int, double> pr;
         if (N == 0) return pr;
 
-        // 1. Inicialización: Todos los nodos empiezan con la misma probabilidad
+        // Inicialización: Todos los nodos empiezan con la misma probabilidad
         double initial_rank = 1.0 / N;
         for (int v : nodos) {
             pr[v] = initial_rank;
         }
 
-        // 2. Ciclo iterativo
+        // Ciclo iterativo
         for (int iter = 0; iter < max_iter; iter++) {
             std::unordered_map<int, double> next_pr;
             double sum_dangling = 0.0;
 
-            // A. Aplicar la base del factor de amortiguación (teletransporte)
+            // Aplicar la base del factor de amortiguación (teletransporte)
             double base_prob = (1.0 - d) / N;
             for (int v : nodos) {
                 next_pr[v] = base_prob;
             }
 
-            // B. Fase de "Push" (Empujar PageRank a los vecinos)
+            // Fase de "Push" (Empujar PageRank a los vecinos)
             for (int u : nodos) {
                 std::vector<int> aristas_salida = G.incidentEdges(u);
                 int out_degree = aristas_salida.size();
@@ -58,14 +58,14 @@ public:
                         next_pr[v] += d * pr_a_repartir;
                     }
                 } else {
-                    // "Dangling node" (Nodo sin salidas): 
+                    // Nodo sin salidas: 
                     // Como la persona no puede hacer clic en otro enlace, asume que 
                     // salta aleatoriamente a cualquier otro nodo del grafo.
                     sum_dangling += d * (pr[u] / N);
                 }
             }
 
-            // C. Sumar el aporte de los dangling nodes y verificar convergencia
+            // Sumar el aporte de los nodos sin salidas y verificar convergencia
             double diferencia_total = 0.0;
             for (int v : nodos) {
                 next_pr[v] += sum_dangling;
@@ -75,7 +75,7 @@ public:
             // Actualizar el estado
             pr = next_pr;
 
-            // D. Criterio de parada
+            // Criterio de parada
             if (diferencia_total < tol) {
                 // Convergencia alcanzada antes del límite
                 break; 
@@ -289,10 +289,6 @@ public:
 
         for (int i : G.vertices()) {
             procesados++;
-            // Imprime cada 100 nodos. \r hace que se sobreescriba la misma línea.
-            if (procesados % 100 == 0) {
-                std::cout << "Procesando nodo " << procesados << " de " << num_vertices << "\r" << std::flush;
-            }
 
             std::unordered_map<int, double> distancias;
 
@@ -322,5 +318,62 @@ public:
         // Fórmula: SUMATORIA (distancia mínima entre el nodo i y el nodo j) / N(N-1)
         // Retornamos la sumatoria dividida por los caminos que realmente existían (Esto para grafos conexos y no conexos)
         return suma_total_distancias / pares_validos;
+    }
+
+    /**
+     * @brief Calcula la Centralidad de Vector Propio (Eigenvector Centrality).
+     * 
+     * @param red Referencia al GrafoRed.
+     * @param max_iter Límite de iteraciones.
+     * @param tol Tolerancia para el criterio de convergencia.
+     * 
+     * @return std::unordered_map<int, double> Mapa con el ID del vértice y su valor de centralidad.
+     */
+    static std::unordered_map<int, double> calcularEigenvectorCentrality(Grafo<VType, EType>& grafo, int max_iter = 100, double tol = 1e-6) {
+    std::vector<int> nodos = grafo.vertices();
+    int N = nodos.size();
+    if (N == 0) return {};
+
+    std::unordered_map<int, double> eigenvector;
+    for (int v : nodos) eigenvector[v] = 1.0;
+
+    for (int i = 0; i < max_iter; i++) {
+        std::unordered_map<int, double> next_eigenvector;
+        
+        // --- CAMBIO CLAVE: AÑADIR BUCLE PROPIO ---
+        // Esto inicializa cada nodo con su propio valor actual (Equivalente a sumar la Matriz Identidad I)
+        for (int v : nodos) {
+            next_eigenvector[v] = eigenvector[v]; 
+        }
+
+        // FASE PUSH: Acumulamos la influencia de los vecinos
+        for (int u : nodos) {
+            for (int e : grafo.incidentEdges(u)) {
+                int v = grafo.opposite(u, e);
+                double peso = static_cast<double>(grafo.getEdgeElement(e));
+                next_eigenvector[v] += eigenvector[u] * peso;
+            }
+        }
+
+        // CALCULO NORMA L2
+        double suma_cuadrados = 0.0;
+        for (int v : nodos) suma_cuadrados += (next_eigenvector[v] * next_eigenvector[v]);
+        double norma = std::sqrt(suma_cuadrados);
+
+        if (norma == 0) break;
+
+        // NORMALIZACIÓN
+        double diferencia_total = 0.0;
+        for (int v : nodos) {
+            double valor_normalizado = next_eigenvector[v] / norma;
+            diferencia_total += std::abs(valor_normalizado - eigenvector[v]);
+            next_eigenvector[v] = valor_normalizado; 
+        }
+
+        eigenvector = next_eigenvector;
+
+        if (diferencia_total < tol) break;
+        }
+        return eigenvector;
     }
 };

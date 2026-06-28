@@ -19,6 +19,7 @@ struct AristaData {
     static double getPesoTotal(AristaData arista) {
         return arista.peso_total;
     }
+    operator double() const { return peso_total; }
 };
 
 class RedUtilidades {
@@ -41,12 +42,12 @@ private:
 
 public:
     /**
-     * @brief Carga los datos de un archivo CSV directamente en una instancia de GrafoRed.
+     * @brief Carga los datos de un archivo CSV directamente en una instancia de Grafo.
      *
      * @tparam VType Tipo de dato que representan los vértices (ej. string).
      *
      * @param nombreArchivo Ruta o nombre del archivo CSV a procesar.
-     * @param red Referencia al GrafoRed que almacenará los datos.
+     * @param red Referencia al Grafo que almacenará los datos.
      * @param columnaOrigen Nombre del header en el CSV para el nodo de origen.
      * @param columnaDestino Nombre del header en el CSV para el nodo de destino.
      * @param columnaPeso Nombre del header en el CSV para el peso de la arista.
