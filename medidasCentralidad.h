@@ -330,50 +330,179 @@ public:
      * @return std::unordered_map<int, double> Mapa con el ID del vértice y su valor de centralidad.
      */
     static std::unordered_map<int, double> calcularEigenvectorCentrality(Grafo<VType, EType>& grafo, int max_iter = 100, double tol = 1e-6) {
-    std::vector<int> nodos = grafo.vertices();
-    int N = nodos.size();
-    if (N == 0) return {};
+        std::vector<int> nodos = grafo.vertices();
+        int N = nodos.size();
+        if (N == 0) return {};
 
-    std::unordered_map<int, double> eigenvector;
-    for (int v : nodos) eigenvector[v] = 1.0;
+        std::unordered_map<int, double> eigenvector;
+        for (int v : nodos) eigenvector[v] = 1.0;
 
-    for (int i = 0; i < max_iter; i++) {
-        std::unordered_map<int, double> next_eigenvector;
-        
-        // --- CAMBIO CLAVE: AÑADIR BUCLE PROPIO ---
-        // Esto inicializa cada nodo con su propio valor actual (Equivalente a sumar la Matriz Identidad I)
-        for (int v : nodos) {
-            next_eigenvector[v] = eigenvector[v]; 
+        for (int i = 0; i < max_iter; i++) {
+            std::unordered_map<int, double> next_eigenvector;
+
+            // --- CAMBIO CLAVE: AÑADIR BUCLE PROPIO ---
+            // Esto inicializa cada nodo con su propio valor actual (Equivalente a sumar la Matriz Identidad I)
+            for (int v : nodos) {
+                next_eigenvector[v] = eigenvector[v];
+            }
+
+            // FASE PUSH: Acumulamos la influencia de los vecinos
+            for (int u : nodos) {
+                for (int e : grafo.incidentEdges(u)) {
+                    int v = grafo.opposite(u, e);
+                    double peso = static_cast<double>(grafo.getEdgeElement(e));
+                    next_eigenvector[v] += eigenvector[u] * peso;
+                }
+            }
+
+            // CALCULO NORMA L2
+            double suma_cuadrados = 0.0;
+            for (int v : nodos) suma_cuadrados += (next_eigenvector[v] * next_eigenvector[v]);
+            double norma = std::sqrt(suma_cuadrados);
+
+            if (norma == 0) break;
+
+            // NORMALIZACIÓN
+            double diferencia_total = 0.0;
+            for (int v : nodos) {
+                double valor_normalizado = next_eigenvector[v] / norma;
+                diferencia_total += std::abs(valor_normalizado - eigenvector[v]);
+                next_eigenvector[v] = valor_normalizado;
+            }
+
+            eigenvector = next_eigenvector;
+
+            if (diferencia_total < tol) break;
         }
+        return eigenvector;
+    }
 
-        // FASE PUSH: Acumulamos la influencia de los vecinos
-        for (int u : nodos) {
-            for (int e : grafo.incidentEdges(u)) {
-                int v = grafo.opposite(u, e);
-                double peso = static_cast<double>(grafo.getEdgeElement(e));
-                next_eigenvector[v] += eigenvector[u] * peso;
+    
+    /**
+     * @brief Calcula el Coeficiente de Clustering Local (para un nodo específico).
+     *
+     * @param G Referencia al grafo.
+     * @param u ID del vértice a evaluar.
+     * @param funcionPeso Puntero a función para extraer el peso de la arista (solo si es ponderado).
+     *
+     * @return double Coeficiente de Clustering (entre 0.0 y 1.0).
+     */
+    static double Clustering(Grafo<VType, EType>& G, int u, double (*funcionPeso)(EType) = nullptr) {
+        double C_u;
+
+        // ==========================================
+        // Si el grafo no es dirigido
+        // ==========================================
+        if (!G.esDirigido()) {
+            double deg_u = G.incidentEdges(u).size();
+            if (deg_u < 2.0) return 0.0;
+
+            // ==========================================
+            // NO PONDERADO
+            // ==========================================
+            if (funcionPeso == nullptr) {
+                std::vector<int> vecinos;
+                for (int e : G.incidentEdges(u)) {
+                    vecinos.push_back(G.opposite(u, e));
+                }
+
+                // Calcular T(u): Triángulos no dirigidos
+                double T_u = GrafoUtilidades<VType, EType>::contarTriangulos(G, u, vecinos);
+
+                // Fórmula: C_u = 2 * T(u) / (deg(u) * (deg(u) - 1))
+                C_u = (2.0 * T_u) / (deg_u * (deg_u - 1));
+            }
+            // ==========================================
+            // PONDERADO
+            // ==========================================
+            else {
+                // Obtener peso máximo en todo el grafo para normalizar
+                double max_w = GrafoUtilidades<VType, EType>::getPesoMaximo(G, funcionPeso);
+                if (max_w == 0.0) return 0.0;
+
+                // Obtener los vecinos de "u" junto con el ID de la arista que los conecta
+                std::vector<std::pair<int, int>> vecinos; // {id_vecino, id_arista_con_u}
+                for (int e : G.incidentEdges(u)) {
+                    vecinos.push_back({G.opposite(u, e), e});
+                }
+
+                double suma_pesos = 0.0;
+                
+                // Calcular T(u): Media geométrica de pesos de los triángulos
+                for (int i = 0; i < vecinos.size(); ++i) {
+
+                    int v = vecinos[i].first;
+                    int edge_uv = vecinos[i].second;
+                    double w_uv = funcionPeso(G.getEdgeElement(edge_uv)) / max_w; // Peso normalizado
+
+                    for (int j = i + 1; j < vecinos.size(); ++j) {
+                        int w = vecinos[j].first;
+                        int edge_uw = vecinos[j].second;
+
+                        // Verificar si los vecinos v y w están conectados entre sí
+                        int edge_vw = G.getEdgeID(v, w);
+                        if (edge_vw != -1) {
+                            double w_uw = funcionPeso(G.getEdgeElement(edge_uw)) / max_w;
+                            double w_vw = funcionPeso(G.getEdgeElement(edge_vw)) / max_w;
+
+                            // Promedio geométrico de los tres pesos normalizados del triángulo
+                            suma_pesos += std::cbrt(w_uv * w_uw * w_vw);
+                        }
+                    }
+                }
+
+                // Fórmula: C_u = 2 * T(u) / (deg(u) * (deg(u) - 1))
+                C_u = (2.0 * suma_pesos) / (deg_u * (deg_u - 1.0));
+            }
+        }
+        // ==========================================
+        // Si el grafo es dirigido
+        // ==========================================
+        else {
+            // ==========================================
+            // NO PONDERADO
+            // ==========================================
+            if (funcionPeso == nullptr) {
+                // Obtener todos los vecinos únicos de "u" (tanto entrantes como salientes)
+                std::vector<int> vecinos;
+                for (int v : G.vertices()) {
+                    if (v == u) continue;
+
+                    if (G.areAdjacent(u, v) || G.areAdjacent(v, u)) {
+                        vecinos.push_back(v);
+                    }
+                }
+
+                // Calcular Grado Total (in + out) y Grado Recíproco (conexiones bidireccionales u <-> v)
+                double deg_total = 0.0;
+                double deg_reciproco = 0.0;
+
+                for (int v : vecinos) {
+                    bool sale = G.areAdjacent(u, v);    // u -> v
+                    bool entra = G.areAdjacent(v, u);   // v -> u
+
+                    if (sale) deg_total += 1.0;
+                    if (entra) deg_total += 1.0;
+                    if (sale && entra) deg_reciproco += 1.0;
+                }
+
+                // Calcular el total de triángulos dirigidos posibles
+                // Fórmula del denominador: 2 * (deg_tot * (deg_tot - 1) - 2 * deg_recip)
+                double denominador = 2.0 * (deg_total * (deg_total - 1.0) - 2.0 * deg_reciproco);
+                if (denominador == 0.0) return 0.0;
+
+                // Calcular T(u): Triángulos dirigidos
+                double T_u = GrafoUtilidades<VType, EType>::contarTriangulosDirigidos(G, u, vecinos);
+                
+                // Fórmula final: C_u = T(u) / denominador
+                C_u = T_u / denominador;
+            }
+            else {
+                // Caso ponderado no cubierto
+                return -1.0;
             }
         }
 
-        // CALCULO NORMA L2
-        double suma_cuadrados = 0.0;
-        for (int v : nodos) suma_cuadrados += (next_eigenvector[v] * next_eigenvector[v]);
-        double norma = std::sqrt(suma_cuadrados);
-
-        if (norma == 0) break;
-
-        // NORMALIZACIÓN
-        double diferencia_total = 0.0;
-        for (int v : nodos) {
-            double valor_normalizado = next_eigenvector[v] / norma;
-            diferencia_total += std::abs(valor_normalizado - eigenvector[v]);
-            next_eigenvector[v] = valor_normalizado; 
-        }
-
-        eigenvector = next_eigenvector;
-
-        if (diferencia_total < tol) break;
-        }
-        return eigenvector;
+        return C_u;
     }
 };

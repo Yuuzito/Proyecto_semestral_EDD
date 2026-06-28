@@ -250,5 +250,13 @@ int main() {
     medirRendimientoCentralidad(redIoT, [](auto& G) {
         auto res = AnalizadorCentralidad<std::string, AristaData>::calcularEigenvectorCentrality(G);
     }, "Eigenvector Centrality - Red IoT");
+
+    // Clustering Local (Cálculo para todos los nodos) - Red NetScience
+    medirRendimientoCentralidad(redNetScience, [](auto& G) {
+        for (int v : G.vertices()) {
+            AnalizadorCentralidad<std::string, AristaData>::Clustering(G, v);
+        }
+    }, "Clustering Local (Todos los nodos) - Red NetScience");
+
     return 0;
 }
