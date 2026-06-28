@@ -232,18 +232,17 @@ int main() {
 
     // Betweenness Centrality - Red IoT (requiere extractor de peso)
     medirRendimientoCentralidad(redIoT, [](auto& G) {
-        auto extractor = [](AristaData a) { return a.peso_total; };
-        auto res = AnalizadorCentralidad<std::string, AristaData>::calcularBetweennessCentrality(G, extractor);
+        auto res = AnalizadorCentralidad<std::string, AristaData>::calcularBetweennessCentrality(G, AristaData::getPesoTotal);
     }, "Betweenness Centrality - Red IoT");
 
     // Closeness Centrality - Red NetScience
     medirRendimientoCentralidad(redNetScience, [](auto& G) {
-        auto res = AnalizadorCentralidad<std::string, AristaData>::ClosenessCentrality(G);
+        auto res = AnalizadorCentralidad<std::string, AristaData>::calcularClosenessCentrality(G);
     }, "Closeness Centrality - Red NetScience");
 
     // Average Shortest Path - Red NetScience
     medirRendimientoCentralidad(redNetScience, [](auto& G) {
-        auto res = AnalizadorCentralidad<std::string, AristaData>::AverageShortestPath(G);
+        auto res = AnalizadorCentralidad<std::string, AristaData>::calcularAverageShortestPath(G);
     }, "Average Shortest Path - Red NetScience");
 
     // Eigenvector Centrality - Red IoT
@@ -254,7 +253,7 @@ int main() {
     // Clustering Local (Cálculo para todos los nodos) - Red NetScience
     medirRendimientoCentralidad(redNetScience, [](auto& G) {
         for (int v : G.vertices()) {
-            AnalizadorCentralidad<std::string, AristaData>::Clustering(G, v);
+            AnalizadorCentralidad<std::string, AristaData>::calcularClustering(G, v);
         }
     }, "Clustering Local (Todos los nodos) - Red NetScience");
 
