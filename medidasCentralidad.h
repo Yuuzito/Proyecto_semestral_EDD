@@ -206,7 +206,7 @@ public:
      *
      * @return unordered_map con el ID del vértice y su valor de centralidad.
      */
-    static std::unordered_map<int, double> ClosenessCentrality(
+    static std::unordered_map<int, double> calcularClosenessCentrality(
         Grafo<VType, EType>& G,
         int u = -1,
         bool esConexo = true,
@@ -277,7 +277,7 @@ public:
      *
      * @return double El promedio de las distancias más cortas válidas.
      */
-    static double AverageShortestPath(Grafo<VType, EType>& G, double (*funcionPeso)(EType) = nullptr) {
+    static double calcularAverageShortestPath(Grafo<VType, EType>& G, double (*funcionPeso)(EType) = nullptr) {
 
         int num_vertices = G.vertices().size();
         // Si hay 1 o 0 nodos, no hay caminos posibles
@@ -387,7 +387,7 @@ public:
      *
      * @return double Coeficiente de Clustering (entre 0.0 y 1.0).
      */
-    static double Clustering(Grafo<VType, EType>& G, int u, double (*funcionPeso)(EType) = nullptr) {
+    static double calcularClustering(Grafo<VType, EType>& G, int u, double (*funcionPeso)(EType) = nullptr) {
         double C_u;
 
         // ==========================================
@@ -499,7 +499,7 @@ public:
             }
             else {
                 // Caso ponderado no cubierto
-                return -1.0;
+                throw std::invalid_argument("El cálculo del Clustering para grafos dirigidos y ponderados no está implementado.");
             }
         }
 

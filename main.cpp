@@ -228,10 +228,10 @@ int main() {
 
     // Betweenness Centrality - Red IoT (requiere extractor de peso)
     medirRendimientoCentralidad(redIoT, [](auto& G) {
-        auto extractor = [](AristaData a) { return a.peso_total; };
-        auto res = AnalizadorCentralidad<std::string, AristaData>::calcularBetweennessCentrality(G, extractor);
+        auto res = AnalizadorCentralidad<std::string, AristaData>::calcularBetweennessCentrality(G, AristaData::getPesoTotal);
     }, "Betweenness Centrality - Red IoT");
 
+<<<<<<< HEAD
     // Closeness Centrality - Red IoT 
     medirRendimientoCentralidad(redIoT, [](auto& G) {
         auto res = AnalizadorCentralidad<std::string, AristaData>::ClosenessCentrality(G);
@@ -254,6 +254,17 @@ int main() {
             AnalizadorCentralidad<std::string, AristaData>::Clustering(G, v);
         }
     }, "Clustering Local (Todos los nodos) - Red IoT");
+=======
+    // Closeness Centrality - Red NetScience
+    medirRendimientoCentralidad(redNetScience, [](auto& G) {
+        auto res = AnalizadorCentralidad<std::string, AristaData>::calcularClosenessCentrality(G);
+    }, "Closeness Centrality - Red NetScience");
+
+    // Average Shortest Path - Red NetScience
+    medirRendimientoCentralidad(redNetScience, [](auto& G) {
+        auto res = AnalizadorCentralidad<std::string, AristaData>::calcularAverageShortestPath(G);
+    }, "Average Shortest Path - Red NetScience");
+>>>>>>> c0e52c6abef3b42155bc5f05f7f2190e1ea471eb
 
     // Eigenvector Centrality - Red IoT
     medirRendimientoCentralidad(redIoT, [](auto& G) {
@@ -261,9 +272,18 @@ int main() {
     }, "Eigenvector Centrality - Red IoT");
     */
 
+<<<<<<< HEAD
     AristaData aristaBase;
     aristaBase.peso_total = 1.0;
     aristaBase.peso_minimo = 1.0;
+=======
+    // Clustering Local (Cálculo para todos los nodos) - Red NetScience
+    medirRendimientoCentralidad(redNetScience, [](auto& G) {
+        for (int v : G.vertices()) {
+            AnalizadorCentralidad<std::string, AristaData>::calcularClustering(G, v);
+        }
+    }, "Clustering Local (Todos los nodos) - Red NetScience");
+>>>>>>> c0e52c6abef3b42155bc5f05f7f2190e1ea471eb
 
     // Extraer funcion de peso
     auto funcionPeso = [](AristaData a) { return a.peso_total; };
