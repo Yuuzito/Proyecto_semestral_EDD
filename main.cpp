@@ -6,6 +6,7 @@
 #include "redUtilidades.h"
 #include "medidasCentralidad.h"
 #include "rendimientoCentralidad.h"
+#include "experimentos.h"
 
 
 int main() {
@@ -214,17 +215,12 @@ int main() {
         redActores,
         nullptr
     );
+    
     */
-   
+    /*
     // ==========================================
     // MEDIDAS Y RENDIMIENTO
     // ==========================================
-    // PageRank - Red Actores
-    auto resPR = AnalizadorCentralidad<std::string, AristaData>::calcularPageRank(redActores);
-    medirRendimientoCentralidad(redActores, [](auto& G) {
-        auto res = AnalizadorCentralidad<std::string, AristaData>::calcularPageRank(G);
-    }, "PageRank - Red de Actores");
-
     // Degree Centrality - Red IoT
     medirRendimientoCentralidad(redIoT, [](auto& G) {
         auto res = AnalizadorCentralidad<std::string, AristaData>::calcularDegreeCentrality(G);
@@ -236,27 +232,43 @@ int main() {
         auto res = AnalizadorCentralidad<std::string, AristaData>::calcularBetweennessCentrality(G, extractor);
     }, "Betweenness Centrality - Red IoT");
 
-    // Closeness Centrality - Red NetScience
-    medirRendimientoCentralidad(redNetScience, [](auto& G) {
+    // Closeness Centrality - Red IoT 
+    medirRendimientoCentralidad(redIoT, [](auto& G) {
         auto res = AnalizadorCentralidad<std::string, AristaData>::ClosenessCentrality(G);
-    }, "Closeness Centrality - Red NetScience");
+    }, "Closeness Centrality - Red IoT");
 
-    // Average Shortest Path - Red NetScience
-    medirRendimientoCentralidad(redNetScience, [](auto& G) {
+    // PageRank - Red IoT
+    auto resPR = AnalizadorCentralidad<std::string, AristaData>::calcularPageRank(redIoT);
+    medirRendimientoCentralidad(redIoT, [](auto& G) {
+        auto res = AnalizadorCentralidad<std::string, AristaData>::calcularPageRank(G);
+    }, "PageRank - Red de IoT");
+
+    // Average Shortest Path - Red IoT
+    medirRendimientoCentralidad(redIoT, [](auto& G) {
         auto res = AnalizadorCentralidad<std::string, AristaData>::AverageShortestPath(G);
-    }, "Average Shortest Path - Red NetScience");
+    }, "Average Shortest Path - Red IoT");
+
+    // Clustering Local (Cálculo para todos los nodos) - Red IoT
+    medirRendimientoCentralidad(redIoT, [](auto& G) {
+        for (int v : G.vertices()) {
+            AnalizadorCentralidad<std::string, AristaData>::Clustering(G, v);
+        }
+    }, "Clustering Local (Todos los nodos) - Red IoT");
 
     // Eigenvector Centrality - Red IoT
     medirRendimientoCentralidad(redIoT, [](auto& G) {
         auto res = AnalizadorCentralidad<std::string, AristaData>::calcularEigenvectorCentrality(G);
     }, "Eigenvector Centrality - Red IoT");
+    */
 
-    // Clustering Local (Cálculo para todos los nodos) - Red NetScience
-    medirRendimientoCentralidad(redNetScience, [](auto& G) {
-        for (int v : G.vertices()) {
-            AnalizadorCentralidad<std::string, AristaData>::Clustering(G, v);
-        }
-    }, "Clustering Local (Todos los nodos) - Red NetScience");
+    AristaData aristaBase;
+    aristaBase.peso_total = 1.0;
+    aristaBase.peso_minimo = 1.0;
 
+    // Extraer funcion de peso
+    auto funcionPeso = [](AristaData a) { return a.peso_total; };
+
+    // Correr todos los experimentos para un dataset
+    ExperimentosSensibilidad<std::string, AristaData>::ejecutarTodos(redIoT, funcionPeso, aristaBase);
     return 0;
 }
