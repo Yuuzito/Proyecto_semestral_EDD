@@ -1,4 +1,5 @@
 #pragma once
+
 #include <iostream>
 #include <vector>
 #include <unordered_map>
@@ -8,7 +9,7 @@
 template <typename VType, typename EType>
 class Grafo {
 private:
-    struct AristaData {
+    struct AristaInterna {
         int u; // Vértice origen
         int v; // Vértice destino
         EType elemento; // Peso, etiqueta, etc.
@@ -17,8 +18,8 @@ private:
     // Mapea el ID del vértice -> Elemento del vértice
     std::unordered_map<int, VType> mapa_vertices;
     
-    // Mapea el ID de la arista -> Datos de la arista (u, v, elemento)
-    std::unordered_map<int, AristaData> mapa_aristas;
+    // Mapea el ID de la arista -> Arista interna (u, v, elemento)
+    std::unordered_map<int, AristaInterna> mapa_aristas;
 
     // Mapeo inverso de mapa_vertices (Permite buscar en O(1) si un vértice existe)
     std::unordered_map<VType, int> mapa_id_vertices;
@@ -42,7 +43,9 @@ public:
     // ==========================================
     // MÉTODOS DE ACCESO
     // ==========================================
-
+    bool esDirigido() const { 
+        return es_dirigido; 
+    }
     // Un arreglo (o par) con los dos puntos extremos de e
     std::pair<int, int> endVertices(int e) {
         if (mapa_aristas.find(e) == mapa_aristas.end()) throw std::invalid_argument("Arista no existe");
@@ -190,55 +193,55 @@ public:
         return mapa_aristas.at(e).elemento; 
     }
 
+    /**
+     *
+     * Esto toma tiempo O(deg(v)) <- Existen formas más eficientes
+     */
+    int getEdgeID(int v, int w) {
+        // Recorremos las aristas incidentes buscando si el vértice opuesto es w
+        for (int e : incidentEdges(v)) {
+            if (opposite(v, e) == w) {
+                return e;
+            }
+        }
+        return -1;
+    }
+
     int numVertices() { 
         return mapa_vertices.size(); 
     }
 
-};
+    // ==========================================
+    // ANÁLISIS DE MEMORIA
+    // ==========================================
+    size_t estimarMemoriaBytes() {
+        size_t total = sizeof(*this); // Tamaño base de los punteros y variables de la clase
 
-// CHEQUEAR SI ESTAN BIEN CONSTRUIDOS LOS GRAFOS 
-    
-// Función para buscar el ID interno de un vértice a partir de su contenido (ej. la IP)
-template <typename V, typename E>
-int buscarIdPorValor(Grafo<V, E>& grafo, const V& valor_buscado) {
-    for (int id : grafo.vertices()) {
-        if (grafo.getVertexElement(id) == valor_buscado) {
-            return id;
+        // Un nodo en un std::unordered_map tiene un "overhead" (punteros al siguiente nodo y hash)
+        // En sistemas de 64 bits, esto suele ser de unos 32 bytes adicionales por elemento.
+        const size_t OVERHEAD_NODO = 32; 
+
+        // 1. Memoria de mapa_vertices
+        total += mapa_vertices.bucket_count() * sizeof(void*); 
+        total += mapa_vertices.size() * (sizeof(int) + sizeof(VType) + OVERHEAD_NODO);
+
+        // 2. Memoria de mapa_id_vertices
+        total += mapa_id_vertices.bucket_count() * sizeof(void*);
+        total += mapa_id_vertices.size() * (sizeof(VType) + sizeof(int) + OVERHEAD_NODO);
+
+        // 3. Memoria de mapa_aristas
+        total += mapa_aristas.bucket_count() * sizeof(void*);
+        total += mapa_aristas.size() * (sizeof(int) + sizeof(AristaInterna) + OVERHEAD_NODO);
+
+        // 4. Memoria de la lista_adyacencia (Un mapa que contiene otros mapas)
+        total += lista_adyacencia.bucket_count() * sizeof(void*);
+        total += lista_adyacencia.size() * (sizeof(int) + sizeof(std::unordered_map<int, int>) + OVERHEAD_NODO);
+        
+        for (const auto& par : lista_adyacencia) {
+            total += par.second.bucket_count() * sizeof(void*);
+            total += par.second.size() * (sizeof(int) + sizeof(int) + OVERHEAD_NODO);
         }
-    }
-    return -1; // Retorna -1 si no lo encuentra
-}
 
-// Función para imprimir como "Rayos X" lo que hay dentro de un vértice
-template <typename V, typename E>
-void inspeccionarNodo(Grafo<V, E>& grafo, const V& valor, int max_conexiones_a_mostrar) {
-    int id_nodo = buscarIdPorValor(grafo, valor);
-    
-    if (id_nodo == -1) {
-        std::cout << "El nodo '" << valor << "' NO existe en el grafo.\n";
-        return;
+        return total;
     }
-
-    std::vector<int> aristas = grafo.incidentEdges(id_nodo);
-    
-    std::cout << "\nNODO ENCONTRADO: '" << valor << "' (ID interno: " << id_nodo << ")\n";
-    std::cout << "Tiene " << aristas.size() << " conexiones directas:\n";
-    
-    // Imprimir hasta un máximo de conexiones que desee el usuario
-    int limite = std::min((int)aristas.size(), max_conexiones_a_mostrar);
-    
-    for (int i = 0; i < limite; i++) {
-        int id_arista = aristas[i];
-        std::pair<int, int> extremos = grafo.endVertices(id_arista);
-        
-        // Determinar quién es el vecino 
-        int id_vecino = (extremos.first == id_nodo) ? extremos.second : extremos.first;
-        
-        std::cout << "  -> Conectado con: " << grafo.getVertexElement(id_vecino) 
-                  << " | Peso (Duracion/Colabs): " << grafo.getEdgeElement(id_arista) << "\n";
-    }
-    
-    if (aristas.size() > max_conexiones_a_mostrar) {
-        std::cout << "  ... y " << (aristas.size() - max_conexiones_a_mostrar) << " conexiones mas.\n";
-    }
-}
+};
