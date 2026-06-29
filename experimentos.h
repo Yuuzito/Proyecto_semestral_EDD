@@ -164,14 +164,14 @@ public:
         // 4. CLOSENESS CENTRALITY
         // ==========================================
         std::cout << "--- 4. CLOSENESS CENTRALITY ---\n";
-        auto ccOriginal = AnalizadorCentralidad<VType, EType>::ClosenessCentrality(G, -1, true, funcionPeso);
+        auto ccOriginal = AnalizadorCentralidad<VType, EType>::calcularClosenessCentrality(G, -1, true, funcionPeso);
         int cc_min = obtenerMin(ccOriginal);
         int cc_max = obtenerMax(ccOriginal);
 
         std::cout << "[ESTRATEGIA ANIADIR]: Conectar el nodo mas periferico (CC_MIN:" << cc_min << ") al mas central (CC_MAX:" << cc_max << ").\n";
         if (cc_min != -1 && cc_max != -1 && G.getEdgeID(cc_min, cc_max) == -1) {
             G.insertEdge(cc_min, cc_max, aristaDefault);
-            auto ccAdd = AnalizadorCentralidad<VType, EType>::ClosenessCentrality(G, cc_min, true, funcionPeso);
+            auto ccAdd = AnalizadorCentralidad<VType, EType>::calcularClosenessCentrality(G, cc_min, true, funcionPeso);
             imprimirCambio("Closeness del nodo periferico (deberia subir al tener acceso rapido al centro)", ccOriginal[cc_min], ccAdd[cc_min]);
             G.removeEdge(G.getEdgeID(cc_min, cc_max));
         }
@@ -183,7 +183,7 @@ public:
             int vecino = G.opposite(cc_max, e_del);
             EType backup = G.getEdgeElement(e_del);
             G.removeEdge(e_del);
-            auto ccDel = AnalizadorCentralidad<VType, EType>::ClosenessCentrality(G, cc_max, true, funcionPeso);
+            auto ccDel = AnalizadorCentralidad<VType, EType>::calcularClosenessCentrality(G, cc_max, true, funcionPeso);
             imprimirCambio("Closeness del nodo central (deberia bajar al perder un acceso directo)", ccOriginal[cc_max], ccDel[cc_max]);
             G.insertEdge(cc_max, vecino, backup);
         }
@@ -193,12 +193,12 @@ public:
         // 5. AVERAGE SHORTEST PATH
         // ==========================================
         std::cout << "--- 5. AVERAGE SHORTEST PATH ---\n";
-        double aspOriginal = AnalizadorCentralidad<VType, EType>::AverageShortestPath(G, funcionPeso);
+        double aspOriginal = AnalizadorCentralidad<VType, EType>::calcularAverageShortestPath(G, funcionPeso);
 
         std::cout << "[ESTRATEGIA ANIADIR]: Unir nodos aleatorios para compactar la red.\n";
         if (pr_min != -1 && pr_max != -1 && G.getEdgeID(pr_min, pr_max) == -1) {
             G.insertEdge(pr_min, pr_max, aristaDefault);
-            double aspAdd = AnalizadorCentralidad<VType, EType>::AverageShortestPath(G, funcionPeso);
+            double aspAdd = AnalizadorCentralidad<VType, EType>::calcularAverageShortestPath(G, funcionPeso);
             imprimirCambio("Average Shortest Path (deberia bajar, red mas compacta)", aspOriginal, aspAdd);
             G.removeEdge(G.getEdgeID(pr_min, pr_max));
         }
@@ -209,7 +209,7 @@ public:
             int vecino = G.opposite(bc_max, e_del);
             EType backup = G.getEdgeElement(e_del);
             G.removeEdge(e_del);
-            double aspDel = AnalizadorCentralidad<VType, EType>::AverageShortestPath(G, funcionPeso);
+            double aspDel = AnalizadorCentralidad<VType, EType>::calcularAverageShortestPath(G, funcionPeso);
             imprimirCambio("Average Shortest Path (deberia subir, caminos mas largos)", aspOriginal, aspDel);
             G.insertEdge(bc_max, vecino, backup);
         }
@@ -226,7 +226,7 @@ public:
         }
 
         if (cl_node != -1) {
-            double clOriginal = AnalizadorCentralidad<VType, EType>::Clustering(G, cl_node, funcionPeso);
+            double clOriginal = AnalizadorCentralidad<VType, EType>::calcularClustering(G, cl_node, funcionPeso);
             std::cout << "[ESTRATEGIA ANIADIR]: Conectar a dos vecinos de Nodo " << cl_node << " para formar un triangulo.\n";
             
             auto vecinos_cl = G.incidentEdges(cl_node);
@@ -242,7 +242,7 @@ public:
 
             if (v1 != -1 && v2 != -1) {
                 G.insertEdge(v1, v2, aristaDefault);
-                double clAdd = AnalizadorCentralidad<VType, EType>::Clustering(G, cl_node, funcionPeso);
+                double clAdd = AnalizadorCentralidad<VType, EType>::calcularClustering(G, cl_node, funcionPeso);
                 imprimirCambio("Clustering Local (deberia subir, se formo un grupo cerrado)", clOriginal, clAdd);
                 G.removeEdge(G.getEdgeID(v1, v2));
             } else {
@@ -266,7 +266,7 @@ public:
             if (v1 != -1 && v2 != -1 && edge_between_neighbors != -1) {
                 EType backup = G.getEdgeElement(edge_between_neighbors);
                 G.removeEdge(edge_between_neighbors);
-                double clDel = AnalizadorCentralidad<VType, EType>::Clustering(G, cl_node, funcionPeso);
+                double clDel = AnalizadorCentralidad<VType, EType>::calcularClustering(G, cl_node, funcionPeso);
                 imprimirCambio("Clustering Local (deberia bajar, se rompio la pandilla)", clOriginal, clDel);
                 G.insertEdge(v1, v2, backup);
             } else {
