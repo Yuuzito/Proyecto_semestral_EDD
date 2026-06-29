@@ -4,7 +4,7 @@
 #include "grafoUtilidades.h"
 #include <unordered_map>
 #include <vector>
-#include <cmath> // Para std::abs
+#include <cmath>
 #include <queue>   
 #include <stack>   
 #include <limits>
@@ -12,78 +12,6 @@
 template<typename VType, typename EType>
 class AnalizadorCentralidad {
 public:
-
-    /**
-     * @brief Calcula la centralidad PageRank de los nodos.
-     * @param G Referencia al Grafo.
-     * @param d Factor de amortiguación (típicamente 0.85).
-     * @param max_iter Límite de iteraciones para evitar ciclos infinitos.
-     * @param tol Tolerancia para el criterio de convergencia.
-     */
-    static std::unordered_map<int, double> calcularPageRank(Grafo<VType, EType>& G, double d = 0.85, int max_iter = 100, double tol = 1e-6) {
-        std::vector<int> nodos = G.vertices();
-        int N = nodos.size();
-        
-        std::unordered_map<int, double> pr;
-        if (N == 0) return pr;
-
-        // Inicialización: Todos los nodos empiezan con la misma probabilidad
-        double initial_rank = 1.0 / N;
-        for (int v : nodos) {
-            pr[v] = initial_rank;
-        }
-
-        // Ciclo iterativo
-        for (int iter = 0; iter < max_iter; iter++) {
-            std::unordered_map<int, double> next_pr;
-            double sum_dangling = 0.0;
-
-            // Aplicar la base del factor de amortiguación (teletransporte)
-            double base_prob = (1.0 - d) / N;
-            for (int v : nodos) {
-                next_pr[v] = base_prob;
-            }
-
-            // Fase de "Push" (Empujar PageRank a los vecinos)
-            for (int u : nodos) {
-                std::vector<int> aristas_salida = G.incidentEdges(u);
-                int out_degree = aristas_salida.size();
-
-                if (out_degree > 0) {
-                    // Dividimos el PageRank actual del nodo entre sus salidas
-                    double pr_a_repartir = pr[u] / out_degree;
-                    
-                    for (int e : aristas_salida) {
-                        int v = G.opposite(u, e); // El nodo destino
-                        next_pr[v] += d * pr_a_repartir;
-                    }
-                } else {
-                    // Nodo sin salidas: 
-                    // Como la persona no puede hacer clic en otro enlace, asume que 
-                    // salta aleatoriamente a cualquier otro nodo del grafo.
-                    sum_dangling += d * (pr[u] / N);
-                }
-            }
-
-            // Sumar el aporte de los nodos sin salidas y verificar convergencia
-            double diferencia_total = 0.0;
-            for (int v : nodos) {
-                next_pr[v] += sum_dangling;
-                diferencia_total += std::abs(next_pr[v] - pr[v]);
-            }
-
-            // Actualizar el estado
-            pr = next_pr;
-
-            // Criterio de parada
-            if (diferencia_total < tol) {
-                // Convergencia alcanzada antes del límite
-                break; 
-            }
-        }
-        return pr;
-    }
-
     /**
      * @brief Calcula la centralidad de grado (Degree Centrality).
      * Mide el nivel de conexiones de un vértice normalizado por (N - 1).
@@ -102,6 +30,8 @@ public:
 
         return degree_centrality;
     }
+
+
 
     /**
      * @brief Calcula el Betweenness Centrality usando el Algoritmo de Brandes (pesado).
@@ -196,6 +126,8 @@ public:
         return betweenness;
     }
 
+
+
     /**
      * @brief Mide la Centralidad de Cercanía (Closeness Centrality). Se puede calcular para toda la red o para un vértice específico.
      *
@@ -269,6 +201,81 @@ public:
         return closeness_centrality;
     }
 
+
+
+    /**
+     * @brief Calcula la centralidad PageRank de los nodos.
+     * @param G Referencia al Grafo.
+     * @param d Factor de amortiguación (típicamente 0.85).
+     * @param max_iter Límite de iteraciones para evitar ciclos infinitos.
+     * @param tol Tolerancia para el criterio de convergencia.
+     */
+    static std::unordered_map<int, double> calcularPageRank(Grafo<VType, EType>& G, double d = 0.85, int max_iter = 100, double tol = 1e-6) {
+        std::vector<int> nodos = G.vertices();
+        int N = nodos.size();
+        
+        std::unordered_map<int, double> pr;
+        if (N == 0) return pr;
+
+        // Inicialización: Todos los nodos empiezan con la misma probabilidad
+        double initial_rank = 1.0 / N;
+        for (int v : nodos) {
+            pr[v] = initial_rank;
+        }
+
+        // Ciclo iterativo
+        for (int iter = 0; iter < max_iter; iter++) {
+            std::unordered_map<int, double> next_pr;
+            double sum_dangling = 0.0;
+
+            // Aplicar la base del factor de amortiguación (teletransporte)
+            double base_prob = (1.0 - d) / N;
+            for (int v : nodos) {
+                next_pr[v] = base_prob;
+            }
+
+            // Fase de "Push" (Empujar PageRank a los vecinos)
+            for (int u : nodos) {
+                std::vector<int> aristas_salida = G.incidentEdges(u);
+                int out_degree = aristas_salida.size();
+
+                if (out_degree > 0) {
+                    // Dividimos el PageRank actual del nodo entre sus salidas
+                    double pr_a_repartir = pr[u] / out_degree;
+                    
+                    for (int e : aristas_salida) {
+                        int v = G.opposite(u, e); // El nodo destino
+                        next_pr[v] += d * pr_a_repartir;
+                    }
+                } else {
+                    // Nodo sin salidas: 
+                    // Como la persona no puede hacer clic en otro enlace, asume que 
+                    // salta aleatoriamente a cualquier otro nodo del grafo.
+                    sum_dangling += d * (pr[u] / N);
+                }
+            }
+
+            // Sumar el aporte de los nodos sin salidas y verificar convergencia
+            double diferencia_total = 0.0;
+            for (int v : nodos) {
+                next_pr[v] += sum_dangling;
+                diferencia_total += std::abs(next_pr[v] - pr[v]);
+            }
+
+            // Actualizar el estado
+            pr = next_pr;
+
+            // Criterio de parada
+            if (diferencia_total < tol) {
+                // Convergencia alcanzada antes del límite
+                break; 
+            }
+        }
+        return pr;
+    }
+
+
+
     /**
      * @brief Mide la Longitud Promedio del Camino Más Corto (Average Shortest Path Length). Se calcula sobre todos los pares de nodos alcanzables en la red.
      *
@@ -285,11 +292,8 @@ public:
 
         double suma_total_distancias = 0.0;
         long long pares_validos = 0;
-        int procesados = 0;
 
         for (int i : G.vertices()) {
-            procesados++;
-
             std::unordered_map<int, double> distancias;
 
             if (funcionPeso == nullptr) {
@@ -319,6 +323,8 @@ public:
         // Retornamos la sumatoria dividida por los caminos que realmente existían (Esto para grafos conexos y no conexos)
         return suma_total_distancias / pares_validos;
     }
+
+
 
     /**
      * @brief Calcula la Centralidad de Vector Propio (Eigenvector Centrality).
@@ -376,6 +382,7 @@ public:
         }
         return eigenvector;
     }
+
 
     
     /**
